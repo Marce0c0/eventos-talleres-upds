@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="description"
     content="Sistema de Gestión de Cursos, Talleres y Hackathons - Universidad Privada Domingo Savio (UPDS) Sede Cochabamba. Plataforma Full Stack integrada con API REST y PostgreSQL." />
   <meta name="author" content="Universidad Privada Domingo Savio" />
@@ -25,8 +25,20 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
     rel="stylesheet" />
 
+  <!-- Inicialización Inmediata de Tema Claro / Oscuro (Zero FOUT) -->
+  <script>
+    (function () {
+      try {
+        var savedTheme = localStorage.getItem('upds_theme');
+        var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        var theme = savedTheme ? savedTheme : (prefersDark ? 'dark' : 'light');
+        document.documentElement.setAttribute('data-theme', theme);
+      } catch (e) { }
+    })();
+  </script>
+
   <!-- Estilos del Sistema de Diseño -->
-  <link rel="stylesheet" href="css/styles.css?v=35" />
+  <link rel="stylesheet" href="css/styles.css?v=52" />
 </head>
 
 <body>
@@ -86,8 +98,17 @@
             </p>
             <div class="footer-pills">
               <span class="footer-pill"><span class="footer-pill-dot green"></span> Campus Cochabamba</span>
-              <span class="footer-pill">🎓 Tecnologías Web II</span>
-              <span class="footer-pill">⚡ SPA Modular ES6+</span>
+              <span class="footer-pill"><svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                  style="display:inline-block;vertical-align:middle;margin-right:2px;">
+                  <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
+                  <path d="M6 12v5c3 3 9 3 12 0v-5" />
+                </svg> Tecnologías Web II</span>
+              <span class="footer-pill"><svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                  style="display:inline-block;vertical-align:middle;margin-right:2px;">
+                  <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                </svg> SPA Modular ES6+</span>
             </div>
           </div>
 
@@ -185,10 +206,15 @@
 
               <!-- Servicios Activos en Producción -->
               <div class="footer-cloud-services">
-                <a href="https://d3i4klrqeo94p9.cloudfront.net/" target="_blank" rel="noopener noreferrer" class="footer-cloud-tag active" title="CDN Global con SSL — Distribución CloudFront Activa">
+                <a href="https://d3i4klrqeo94p9.cloudfront.net/" target="_blank" rel="noopener noreferrer"
+                  class="footer-cloud-tag active" title="CDN Global con SSL — Distribución CloudFront Activa">
                   <span class="footer-tag-dot green"></span>
                   <span>CloudFront CDN</span>
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="opacity:0.7;"><path d="M15 3h6v6"/><path d="M10 14 21 3"/></svg>
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                    style="opacity:0.7;">
+                    <path d="M15 3h6v6" />
+                    <path d="M10 14 21 3" />
+                  </svg>
                 </a>
                 <span class="footer-cloud-tag active" title="Almacenamiento de Assets Estáticos & Hosting">
                   <span class="footer-tag-dot green"></span>
@@ -213,7 +239,8 @@
               <div class="footer-roadmap-block">
                 <span class="footer-roadmap-label">Roadmap / Por Implementar:</span>
                 <div class="footer-cloud-services">
-                  <span class="footer-cloud-tag roadmap" title="Por implementar: Correos Transaccionales con Boletos QR">
+                  <span class="footer-cloud-tag roadmap"
+                    title="Por implementar: Correos Transaccionales con Boletos QR">
                     <span class="footer-tag-dot amber"></span>
                     <span>Amazon SES</span>
                   </span>
@@ -250,7 +277,7 @@
   <div id="toast-container" class="toast-container"></div>
 
   <!-- Módulo Principal de JavaScript ES6 -->
-  <script type="module" src="js/app.js?v=96"></script>
+  <script type="module" src="js/app.js?v=103"></script>
 </body>
 
 </html>

@@ -43,6 +43,7 @@ export const Navbar = {
     const activeUser = state.activeUser;
     const currentView = state.currentView;
     const token = safeStorage.getItem('token');
+    const isLoading = !!state.isLoading;
     const isAuthenticated = !!(token && activeUser && activeUser.role !== 'guest');
     const isGuest = activeUser?.role === 'guest';
     const isWelcome = !activeUser || currentView === 'welcome';
@@ -76,11 +77,14 @@ export const Navbar = {
             ].filter((item) => !item.permission || can(activeUser?.role, item.permission))
         );
 
+    const userInitial = activeUser?.name ? activeUser.name.trim().charAt(0).toUpperCase() : 'U';
+    const roleLabel = ROLES.find((r) => r.id === activeUser?.role)?.label || activeUser?.role || 'Estudiante';
+
     container.innerHTML = `
       <header class="app-header">
         <div class="header-container">
-          <!-- Bloque Superior Izquierdo: Marca UPDS, Modo Activo e Iniciar Sesión -->
-          <div class="header-left-cluster" style="display:flex; align-items:center; gap:0.85rem; flex-wrap:wrap;">
+          <!-- Bloque Superior Izquierdo: Marca UPDS -->
+          <div class="header-left-cluster" style="display:flex; align-items:center; gap:0.85rem;">
             <!-- Logo Institucional UPDS (Clic para volver al Inicio) -->
             <div class="brand-area" id="brand-home-btn" role="button" tabindex="0" title="Volver al Inicio UPDS">
               <div class="brand-logo-card">
@@ -91,39 +95,79 @@ export const Navbar = {
                 <span class="brand-subtitle">Universidad Privada Domingo Savio · Cochabamba</span>
               </div>
             </div>
-
-            <!-- Modo Activo e Iniciar Sesión (Arriba a la Izquierda) -->
-            <div class="header-status-box" style="display:flex; align-items:center; gap:0.45rem;">
-              ${
-                !isWelcome && isGuest
-                  ? `
-                  <span class="role-tag" style="background:#475569;color:#ffffff;font-size:0.72rem;font-weight:700;">MODO INVITADO</span>
-                  <button id="headbar-login-btn" class="btn btn-sm btn-primary" style="background:#004b93;border-color:#004b93;color:#ffffff;font-size:0.78rem;">
-                    ${Icons.key('btn-svg-icon', 14)} <span>Iniciar Sesión</span>
-                  </button>
-                  <button id="headbar-home-btn" class="btn btn-sm btn-outline" style="color:#ffffff;border-color:rgba(255,255,255,0.35);background:rgba(255,255,255,0.12);font-size:0.78rem;" title="Volver a la pantalla principal">
-                    ${Icons.home('btn-svg-icon', 14)} <span>Regresar al Inicio</span>
-                  </button>
-                `
-                  : !isWelcome && isAuthenticated
-                  ? `
-                  <div class="auth-user-badge">
-                    <span class="role-tag role-${activeUser.role}">${ROLES.find((r) => r.id === activeUser.role)?.label || activeUser.role}</span>
-                    <span class="session-label" title="${activeUser.email}">${Icons.user('btn-svg-icon', 13)} ${activeUser.name}</span>
-                  </div>
-                `
-                  : ''
-              }
-            </div>
           </div>
 
-          <!-- Bloque Superior Derecho: Controles y Salir -->
-          <div class="header-right-cluster" style="display:flex; align-items:center; gap:0.5rem;">
+          <!-- Bloque Superior Derecho: Perfil de Usuario y Controles -->
+          <div class="header-right-cluster" style="display:flex; align-items:center; gap:0.65rem;">
             ${
-              !isWelcome && isAuthenticated
-                ? `<button id="logout-btn" class="btn btn-sm btn-secondary desktop-logout-btn" title="Cerrar Sesión JWT">${Icons.logout('btn-svg-icon', 14)} Salir</button>`
+              isLoading
+                ? `
+                <div class="header-user-skeleton desktop-only-flex" aria-hidden="true" title="Cargando perfil...">
+                  <span class="header-shimmer" style="width: 28px; height: 28px; border-radius: 9999px;"></span>
+                  <span class="header-shimmer" style="width: 65px; height: 14px; border-radius: 4px;"></span>
+                </div>
+              `
+                : !isWelcome && isGuest
+                ? `
+                <div class="header-guest-box desktop-only-flex" style="display:inline-flex; align-items:center; gap:0.45rem;">
+                  <span class="role-pill role-pill-guest">MODO INVITADO</span>
+                  <button id="headbar-login-btn" class="btn btn-xs btn-primary" style="background:#004b93; border-color:#004b93;">
+                    ${Icons.key('btn-svg-icon', 13)} <span>Iniciar Sesión</span>
+                  </button>
+                  <button id="headbar-home-btn" class="btn btn-xs btn-outline" style="color:#ffffff; border-color:rgba(255,255,255,0.3); background:rgba(255,255,255,0.1);" title="Volver al inicio">
+                    ${Icons.home('btn-svg-icon', 13)}
+                  </button>
+                </div>
+              `
+                : !isWelcome && isAuthenticated
+                ? `
+                <div class="header-user-wrapper desktop-only-flex" id="user-popover-wrapper">
+                  <!-- Trigger del Perfil con Avatar y Chevron -->
+                  <button id="user-profile-trigger" class="user-profile-trigger" type="button" aria-haspopup="true" aria-expanded="false" title="Mi Cuenta (${activeUser.name})">
+                    <div class="user-chip-avatar role-avatar-${activeUser.role}">
+                      <span>${userInitial}</span>
+                    </div>
+                    <span class="user-trigger-name">${(activeUser.name || 'Usuario').split(' ')[0]}</span>
+                    <svg class="user-trigger-chevron" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                  </button>
+
+                  <!-- Popover Flotante de Perfil (Progressive Disclosure) -->
+                  <div class="user-popover-menu" id="user-profile-popover" role="menu" aria-label="Menú de usuario">
+                    <div class="popover-profile-header">
+                      <div class="popover-avatar role-avatar-${activeUser.role}">
+                        <span>${userInitial}</span>
+                      </div>
+                      <div class="popover-meta">
+                        <strong class="popover-user-name">${activeUser.name}</strong>
+                        <span class="popover-user-email" title="${activeUser.email}">${activeUser.email}</span>
+                        <div class="popover-role-badge role-pill-${activeUser.role}">
+                          <span class="role-status-dot"></span>
+                          <span>${roleLabel}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="popover-divider"></div>
+
+                    <div class="popover-actions">
+                      <button id="popover-logout-btn" class="popover-btn-logout" type="button" role="menuitem">
+                        ${Icons.logout('popover-icon-logout', 15)}
+                        <span>Cerrar Sesión</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              `
                 : ''
             }
+            <!-- Botón Selector de Tema Claro / Oscuro -->
+            <button id="theme-toggle-btn" class="theme-toggle-btn" type="button" aria-label="Cambiar tema visual" title="Alternar Modo Claro / Modo Oscuro">
+              <span class="theme-icon-light">${Icons.sun('theme-icon-svg', 16)}</span>
+              <span class="theme-icon-dark">${Icons.moon('theme-icon-svg', 16)}</span>
+            </button>
+
             <!-- Botón Menú Móvil -->
             ${navItems.length > 0 ? `<button id="mobile-menu-toggle" class="mobile-toggle" aria-label="Abrir menú">${Icons.menu('mobile-menu-icon', 20)}</button>` : ''}
           </div>
@@ -131,10 +175,69 @@ export const Navbar = {
 
         <!-- Barra de Navegación por Pestañas (Centrada Arriba al Medio) -->
         ${
-          navItems.length > 0
+          isLoading
+            ? `
+        <nav class="nav-bar" id="app-nav-bar" aria-label="Cargando navegación">
+          <div class="header-nav-skeleton">
+            <span class="header-shimmer" style="width: 100px; height: 32px; border-radius: 9999px;"></span>
+            <span class="header-shimmer" style="width: 130px; height: 32px; border-radius: 9999px;"></span>
+            <span class="header-shimmer" style="width: 140px; height: 32px; border-radius: 9999px;"></span>
+            <span class="header-shimmer" style="width: 110px; height: 32px; border-radius: 9999px;"></span>
+          </div>
+        </nav>
+        `
+            : navItems.length > 0
             ? `
         <nav class="nav-bar" id="app-nav-bar">
           <ul class="nav-list" style="justify-content:center;">
+            <!-- Estado de Sesión en Móvil (dentro del menú desplegable) -->
+            ${
+              !isWelcome && isGuest
+                ? `
+              <li class="nav-item mobile-session-item">
+                <div class="mobile-session-card">
+                  <div><span class="role-pill role-pill-guest">MODO INVITADO</span></div>
+                  <div class="mobile-session-actions" style="margin-top:0.4rem; display:flex; gap:0.4rem;">
+                    <button id="mobile-login-btn" class="btn btn-sm btn-primary" style="background:#004b93; border-color:#004b93; color:#ffffff; font-size:0.82rem; width:100%; justify-content:center;">
+                      ${Icons.key('btn-svg-icon', 14)} <span>Iniciar Sesión</span>
+                    </button>
+                    <button id="mobile-home-btn" class="btn btn-sm btn-outline" style="color:#ffffff; border-color:rgba(255,255,255,0.35); background:rgba(255,255,255,0.12); font-size:0.82rem; width:100%; justify-content:center;" title="Volver al inicio">
+                      ${Icons.home('btn-svg-icon', 14)} <span>Inicio</span>
+                    </button>
+                  </div>
+                </div>
+              </li>
+            `
+                : !isWelcome && isAuthenticated
+                ? `
+              <li class="nav-item mobile-session-item">
+                <div class="mobile-user-card">
+                  <div class="mobile-user-card-body">
+                    <div class="mobile-avatar role-avatar-${activeUser.role}">
+                      <span>${userInitial}</span>
+                    </div>
+                    <div class="mobile-user-text">
+                      <div class="mobile-user-name">${activeUser.name}</div>
+                      <div class="mobile-user-email">${activeUser.email}</div>
+                    </div>
+                    <span class="user-chip-role role-pill-${activeUser.role}">${roleLabel}</span>
+                  </div>
+                </div>
+              </li>
+            `
+                : ''
+            }
+            <!-- Selector de Tema en Menú Móvil -->
+            <li class="nav-item mobile-session-item" style="margin-bottom:0.65rem;">
+              <button id="mobile-theme-toggle-btn" class="mobile-theme-toggle" type="button" aria-label="Cambiar tema">
+                <span class="mobile-theme-label">
+                  <span class="theme-icon-light">${Icons.sun('theme-icon-svg', 16)}</span>
+                  <span class="theme-icon-dark">${Icons.moon('theme-icon-svg', 16)}</span>
+                  <span>Modo Visual</span>
+                </span>
+                <span class="theme-current-badge">${(typeof document !== 'undefined' && document.documentElement.getAttribute('data-theme') === 'dark') ? 'Oscuro' : 'Claro'}</span>
+              </button>
+            </li>
             ${navItems
               .map(
                 (item) => `
@@ -218,6 +321,52 @@ export const Navbar = {
       logoutBtn.addEventListener('click', doLogout);
     }
 
+    // Manejo Interactivo del Popover de Perfil (Click, Click-Outside y Tecla Escape)
+    const profileTrigger = container.querySelector('#user-profile-trigger');
+    const profilePopover = container.querySelector('#user-profile-popover');
+    const popoverLogoutBtn = container.querySelector('#popover-logout-btn');
+
+    if (profileTrigger && profilePopover) {
+      const closePopover = () => {
+        profilePopover.classList.remove('open');
+        profileTrigger.setAttribute('aria-expanded', 'false');
+      };
+
+      const togglePopover = (e) => {
+        e.stopPropagation();
+        const isOpen = profilePopover.classList.toggle('open');
+        profileTrigger.setAttribute('aria-expanded', String(isOpen));
+      };
+
+      profileTrigger.addEventListener('click', togglePopover);
+
+      // Cerrar al hacer clic en cualquier lugar fuera del popover
+      const handleOutsideClick = (e) => {
+        if (!profilePopover.contains(e.target) && !profileTrigger.contains(e.target)) {
+          closePopover();
+        }
+      };
+      document.addEventListener('click', handleOutsideClick);
+
+      // Accesibilidad: Cerrar con tecla Escape
+      const handleEscapeKey = (e) => {
+        if (e.key === 'Escape' && profilePopover.classList.contains('open')) {
+          closePopover();
+          profileTrigger.focus();
+        }
+      };
+      document.addEventListener('keydown', handleEscapeKey);
+
+      if (popoverLogoutBtn) {
+        popoverLogoutBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          closePopover();
+          doLogout();
+        });
+      }
+    }
+
     const mobileLogoutBtn = container.querySelector('#mobile-logout-btn');
     if (mobileLogoutBtn) {
       mobileLogoutBtn.addEventListener('click', (e) => {
@@ -254,6 +403,15 @@ export const Navbar = {
       });
     }
 
+    const mobileLoginBtn = container.querySelector('#mobile-login-btn');
+    if (mobileLoginBtn) {
+      mobileLoginBtn.addEventListener('click', () => {
+        const navBar = container.querySelector('#app-nav-bar');
+        if (navBar) navBar.classList.remove('open');
+        this.openLoginModal();
+      });
+    }
+
     const headbarLoginTopBtn = container.querySelector('#headbar-login-top-btn');
     if (headbarLoginTopBtn) {
       headbarLoginTopBtn.addEventListener('click', () => {
@@ -265,6 +423,18 @@ export const Navbar = {
     const headbarHomeBtn = container.querySelector('#headbar-home-btn');
     if (headbarHomeBtn) {
       headbarHomeBtn.addEventListener('click', () => {
+        safeStorage.removeItem('guestMode');
+        safeSession.removeItem('guestMode');
+        store.setActiveUser(null);
+        store.setView('welcome');
+      });
+    }
+
+    const mobileHomeBtn = container.querySelector('#mobile-home-btn');
+    if (mobileHomeBtn) {
+      mobileHomeBtn.addEventListener('click', () => {
+        const navBar = container.querySelector('#app-nav-bar');
+        if (navBar) navBar.classList.remove('open');
         safeStorage.removeItem('guestMode');
         safeSession.removeItem('guestMode');
         store.setActiveUser(null);
@@ -288,6 +458,30 @@ export const Navbar = {
         e.stopPropagation();
         if (navBar) navBar.classList.toggle('open');
       });
+    }
+
+    // Toggle de Tema Claro / Oscuro (Unificado Desktop y Móvil)
+    const toggleTheme = (e) => {
+      e?.preventDefault();
+      const current = document.documentElement.getAttribute('data-theme') || 'light';
+      const next = current === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', next);
+      safeStorage.setItem('upds_theme', next);
+
+      const badge = container.querySelector('.theme-current-badge');
+      if (badge) {
+        badge.textContent = next === 'dark' ? 'Oscuro' : 'Claro';
+      }
+      Toast.info(next === 'dark' ? 'Modo Oscuro activado.' : 'Modo Claro activado.');
+    };
+
+    const themeBtn = container.querySelector('#theme-toggle-btn');
+    if (themeBtn) {
+      themeBtn.addEventListener('click', toggleTheme);
+    }
+    const mobileThemeBtn = container.querySelector('#mobile-theme-toggle-btn');
+    if (mobileThemeBtn) {
+      mobileThemeBtn.addEventListener('click', toggleTheme);
     }
 
     // Utilitario silencioso para consola de desarrollo si se necesita cambiar URL

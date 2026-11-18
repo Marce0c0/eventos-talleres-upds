@@ -1,5 +1,6 @@
 // Utilidades y Gestor de Hilos de Discusión para Foros — Sistema-Tutoriales-UPDS
 import { safeStorage } from '../config/env.js';
+import { Icons } from '../components/Icons.js';
 
 // SVG moderno de portada por defecto con signo de interrogación
 export const DEFAULT_FORUM_COVER = 'data:image/svg+xml;utf8,' + encodeURIComponent(`
@@ -25,11 +26,11 @@ export const DEFAULT_FORUM_COVER = 'data:image/svg+xml;utf8,' + encodeURICompone
 
 // Categorías del Foro
 export const FORUM_CATEGORIES = [
-  { id: 'pregunta', label: 'Pregunta / Duda', icon: '❓', color: '#1d4ed8', bg: '#eff6ff', border: '#bfdbfe' },
-  { id: 'recomendacion', label: 'Recomendación / Tip', icon: '💡', color: '#047857', bg: '#ecfdf5', border: '#a7f3d0' },
-  { id: 'equipo', label: 'Búsqueda de Equipo', icon: '🤝', color: '#b45309', bg: '#fffbeb', border: '#fde68a' },
-  { id: 'debate', label: 'Aporte Académico', icon: '💬', color: '#6d28d9', bg: '#f5f3ff', border: '#ddd6fe' },
-  { id: 'soporte', label: 'Soporte / Trámite', icon: '🛠️', color: '#334155', bg: '#f8fafc', border: '#cbd5e1' },
+  { id: 'pregunta', label: 'Pregunta / Duda', icon: Icons.helpCircle('forum-cat-icon', 14), color: '#1d4ed8', bg: '#eff6ff', border: '#bfdbfe' },
+  { id: 'recomendacion', label: 'Recomendación / Tip', icon: Icons.lightbulb('forum-cat-icon', 14), color: '#047857', bg: '#ecfdf5', border: '#a7f3d0' },
+  { id: 'equipo', label: 'Búsqueda de Equipo', icon: Icons.handshake('forum-cat-icon', 14), color: '#b45309', bg: '#fffbeb', border: '#fde68a' },
+  { id: 'debate', label: 'Aporte Académico', icon: Icons.chat('forum-cat-icon', 14), color: '#6d28d9', bg: '#f5f3ff', border: '#ddd6fe' },
+  { id: 'soporte', label: 'Soporte / Trámite', icon: Icons.wrench('forum-cat-icon', 14), color: '#334155', bg: '#f8fafc', border: '#cbd5e1' },
 ];
 
 export const getCategoryById = (catId) => {

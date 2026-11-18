@@ -15,6 +15,7 @@ import { ForumsView } from './views/ForumsView.js';
 import { NotificationsView } from './views/NotificationsView.js';
 import { NotFoundView } from './views/NotFoundView.js';
 import { can } from './utils/permissions.js';
+import { AIAssistant } from './components/AIAssistant.js';
 
 class App {
   constructor() {
@@ -26,7 +27,7 @@ class App {
   }
 
   async init() {
-    console.log('🚀 Inicializando frontend del Sistema-Tutoriales-UPDS (Seguridad, Modo Invitado & Skeletons)...');
+    console.log('[UPDS] Inicializando frontend del Sistema-Tutoriales-UPDS (Seguridad, Modo Invitado & Skeletons)...');
 
     // Manejar cambios de ruta / hash en el navegador
     window.addEventListener('hashchange', () => {
@@ -44,9 +45,10 @@ class App {
       const targetHash = (typeof window !== 'undefined' ? window.location.hash.replace(/^#\/?/, '').trim() : '');
       const activeView = targetHash || store.getState().currentView || 'dashboard';
       this.mainContainer.innerHTML = Skeleton.renderViewSkeleton(activeView);
-      if (this.navContainer) {
-        Navbar.render(this.navContainer);
-      }
+    }
+    // Renderizar App Shell inicial del Navbar con shimmer sincronizado
+    if (this.navContainer) {
+      Navbar.render(this.navContainer);
     }
 
     // Cargar datos iniciales desde el backend REST
@@ -54,6 +56,13 @@ class App {
 
     // Iniciar sondeo inteligente de notificaciones en segundo plano (0 lag)
     this.startNotificationsPolling();
+
+    // Inicializar Asistente Académico Conversacional UPDS (Arrastrable, Reactivo y Táctil)
+    try {
+      AIAssistant.init();
+    } catch (e) {
+      console.warn('[UPDS] Error al montar asistente:', e);
+    }
   }
 
   startNotificationsPolling() {
@@ -119,12 +128,19 @@ class App {
     const isAlreadyInitialized = safeSession.getItem('app_initialized') === 'true';
     if (!isAlreadyInitialized) {
       this.showLoading(true);
+      // App Shell: renderizar barra con micro-skeletons translúcidos durante carga
+      if (this.navContainer) {
+        Navbar.render(this.navContainer);
+      }
     } else {
       this.showLoading(false);
       if (this.mainContainer && (!this.mainContainer.innerHTML || this.mainContainer.innerHTML.trim() === '')) {
         const targetHash = (typeof window !== 'undefined' ? window.location.hash.replace(/^#\/?/, '').trim() : '');
         const activeView = targetHash || store.getState().currentView || 'dashboard';
         this.mainContainer.innerHTML = Skeleton.renderViewSkeleton(activeView);
+      }
+      if (this.navContainer) {
+        Navbar.render(this.navContainer);
       }
     }
 

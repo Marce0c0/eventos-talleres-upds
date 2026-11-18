@@ -27,6 +27,12 @@ export const BookingsView = {
     let currentPage = 1;
     let filterStatus = 'pending'; // Prioridad inicial: atender primero comprobantes pendientes
     let searchQuery = '';
+    let selectedBookingId = null;
+
+    BookingsView.openDetail = (bookingId) => {
+      selectedBookingId = bookingId;
+      if (this._renderList) this._renderList();
+    };
 
     this._renderList = () => {
       const currentState = store.getState();
@@ -48,6 +54,358 @@ export const BookingsView = {
         filterStatus = 'all';
       }
 
+      const bodyContainer = container.querySelector('#bookings-table-container');
+      const filterTabsContainer = container.querySelector('#bookings-filter-tabs');
+      if (!bodyContainer) return;
+
+      // ─── PANTALLA 2: DETALLE DE ENTRADA & TODAS LAS OPCIONES ──────────────
+      if (selectedBookingId) {
+        if (filterTabsContainer) filterTabsContainer.innerHTML = '';
+
+        const booking = currentState.bookings?.find((b) => b.id === selectedBookingId);
+        if (!booking) {
+          selectedBookingId = null;
+          this._renderList();
+          return;
+        }
+
+        const course = currentState.courses?.find((c) => c.id === booking.courseId) || booking.course;
+        const tutoria = currentState.tutorias?.find((t) => t.id === booking.tutoriaId) || booking.tutoria;
+        const student = currentState.users?.find((u) => u.id === booking.studentId) || booking.student || currentState.activeUser;
+        const parsed = course ? parseCourseDescription(course) : null;
+        const eventTitle = course?.title || tutoria?.title || 'Evento / Sesión Académica';
+        const tutoriaTitle = tutoria?.title || 'Sesión de Clase / Taller Práctico';
+        const lowerTitle = eventTitle.toLowerCase();
+        const eventPrice = (course && typeof course.price === 'number' && course.price > 0)
+          ? course.price
+          : (parsed?.price ?? 0);
+        const eventCategory = (course && course.category && course.category !== 'Académico')
+          ? course.category
+          : (lowerTitle.includes('bootcamp') ? 'Bootcamp' : (lowerTitle.includes('hackathon') ? 'Hackathon' : (lowerTitle.includes('ciberseguridad') ? 'Ciberseguridad' : (lowerTitle.includes('taller') ? 'Taller' : 'Académico'))));
+
+        const modality = tutoria?.modality || booking.tutoria?.modality || 'presencial';
+        const location = tutoria?.location || booking.tutoria?.location || 'Campus Central UPDS - Aula 302';
+        const meetingUrl = tutoria?.meetingUrl || booking.tutoria?.meetingUrl || 'https://meet.google.com/upds-academic';
+        const isCancelled = booking.status === 'cancelled';
+        const isDeletedByAdmin = isCancelled && typeof booking.receiptUrl === 'string' && booking.receiptUrl.includes('deleted_by_admin');
+        const isPending = booking.status === 'pending';
+        const ticketId = `UPDS-${(booking.id || '').slice(0, 8).toUpperCase()}`;
+
+        // Obtener comprobante de pago bancario si existe
+        let receipt = null;
+        const rawUrl = booking.receiptUrl || '';
+        const cleanImage = rawUrl.includes('data:image') || rawUrl.startsWith('http') ? rawUrl.split('###')[0] : null;
+        if (cleanImage) {
+          receipt = {
+            bookingId: booking.id,
+            studentName: student?.name || 'Estudiante UPDS',
+            studentEmail: student?.email || 'estudiante@upds.edu.bo',
+            courseTitle: eventTitle,
+            amount: eventPrice > 0 ? `${eventPrice} Bs` : 'Arancel UPDS',
+            uploadedAt: booking.createdAt || booking.scheduledAt,
+            receiptImage: cleanImage,
+            status: booking.status,
+            isDemoReceipt: false,
+          };
+        } else {
+          receipt = getBookingReceipt(booking.id);
+        }
+
+        if (!receipt && isPending) {
+          receipt = {
+            bookingId: booking.id,
+            studentName: student?.name || 'Estudiante UPDS',
+            studentEmail: student?.email || 'estudiante@upds.edu.bo',
+            courseTitle: eventTitle,
+            amount: eventPrice > 0 ? `${eventPrice} Bs` : 'Arancel UPDS',
+            uploadedAt: booking.scheduledAt || new Date().toISOString(),
+            receiptImage: 'img/upds-logo.png',
+            status: 'pending',
+            isDemoReceipt: true,
+          };
+        }
+
+        bodyContainer.innerHTML = `
+          <div class="booking-detail-view animate-fade-in">
+            <!-- Botón Volver a Mis Entradas -->
+            <button type="button" class="btn-back-link" id="btn-back-to-bookings">
+              ${Icons.arrowLeft('', 16)} <span>Volver a ${currentCanManage ? 'Gestión de Entradas' : 'Mis Entradas'}</span>
+            </button>
+
+            <!-- Tarjeta de Resumen del Evento -->
+            <div class="card booking-detail-hero">
+              <div class="detail-header">
+                <div class="detail-tags">
+                  <span class="badge badge-info" style="font-size:0.75rem;">${eventCategory}</span>
+                  ${eventPrice > 0 ? `<span class="badge" style="background:#ecfdf5; color:#047857; font-weight:700; border:1px solid #a7f3d0; font-size:0.75rem;">${eventPrice} Bs</span>` : '<span class="badge" style="background:#f1f5f9; color:#475569; font-size:0.75rem;">Gratuito</span>'}
+                  ${Badge.bookingStatus(booking.status, booking.receiptUrl)}
+                </div>
+                <h2 class="detail-title">${eventTitle}</h2>
+                <p class="detail-tutoria">${tutoriaTitle}</p>
+              </div>
+
+              <!-- Metadatos de la Entrada -->
+              <div class="detail-meta-grid">
+                <div class="detail-meta-item">
+                  <span class="meta-label">Estudiante Titular</span>
+                  <strong class="meta-value">${student?.name || 'Estudiante UPDS'}</strong>
+                  <small class="meta-sub">${student?.email || ''}</small>
+                </div>
+                <div class="detail-meta-item">
+                  <span class="meta-label">Fecha y Horario</span>
+                  <strong class="meta-value">${Badge.formatDate(booking.scheduledAt)}</strong>
+                  <small class="meta-sub">Hora Oficial de Bolivia</small>
+                </div>
+                <div class="detail-meta-item">
+                  <span class="meta-label">Modalidad y Acceso</span>
+                  <strong class="meta-value">${modality === 'presencial' ? 'Presencial' : 'Virtual en Vivo'}</strong>
+                  <small class="meta-sub">${modality === 'presencial' ? location : `<a href="${meetingUrl}" target="_blank" rel="noopener" style="color:#0284c7; text-decoration:underline;">Enlace Meet</a>`}</small>
+                </div>
+                <div class="detail-meta-item">
+                  <span class="meta-label">ID de Entrada</span>
+                  <strong class="meta-value" style="font-family:monospace; letter-spacing:0.04em; color:#002855;">#${ticketId}</strong>
+                  <small class="meta-sub">Registro Verificado en Base de Datos</small>
+                </div>
+              </div>
+            </div>
+
+            <!-- Panel de Opciones del Evento ("Todas las Opciones") -->
+            <div class="detail-options-container">
+              <h3 class="detail-options-title">Opciones Disponibles para tu Entrada</h3>
+
+              <div class="detail-options-list">
+                <!-- Opción 1: Ver Pase Digital con Código QR -->
+                <div class="detail-option-card primary-option">
+                  <div class="opt-icon-box navy">
+                    ${Icons.ticket('', 24)}
+                  </div>
+                  <div class="opt-content">
+                    <h4>Ver Pase Digital & Código QR</h4>
+                    <p>Accede a tu credencial académica con QR óptico de alta legibilidad y opciones oficiales para Google Wallet y Apple Wallet.</p>
+                  </div>
+                  <button type="button" class="btn btn-primary btn-detail-action" id="detail-btn-qr">
+                    ${Icons.ticket('', 16)} <span>Ver Entrada QR</span>
+                  </button>
+                </div>
+
+                <!-- Opción 2: Ver Recibo de Pago (Distintivo Verde Esmeralda Financiero) -->
+                <div class="detail-option-card receipt-option">
+                  <div class="opt-icon-box emerald">
+                    ${Icons.fileText('', 24)}
+                  </div>
+                  <div class="opt-content">
+                    <h4>Ver Recibo y Comprobante Bancario</h4>
+                    <p>${receipt ? 'Consulta el comprobante de transferencia Simple QR enviado a la administración académica.' : 'Esta inscripción fue registrada como gratuita o sin comprobante bancario requerido.'}</p>
+                  </div>
+                  <button type="button" class="btn btn-outline btn-detail-action btn-receipt-action" id="detail-btn-receipt" ${!receipt ? 'disabled' : ''} style="${!receipt ? 'opacity:0.6; cursor:not-allowed;' : ''}">
+                    ${Icons.fileText('', 16)} <span>${receipt ? 'Ver Recibo' : 'Sin Comprobante'}</span>
+                  </button>
+                </div>
+
+                <!-- Opción 3: Ya no asistiré (Estudiante con entrada activa) -->
+                ${isCurrentStudent && !isCancelled && !isPending ? `
+                  <div class="detail-option-card warning-option">
+                    <div class="opt-icon-box red">
+                      ${Icons.x('', 24)}
+                    </div>
+                    <div class="opt-content">
+                      <h4>Cancelar Asistencia ("Ya no asistiré")</h4>
+                      <p>Si no podrás asistir a la clase, anula tu entrada para liberar de inmediato tu cupo y permitir que otro estudiante pueda aprovechar la plaza.</p>
+                    </div>
+                    <button type="button" class="btn btn-danger-outline btn-detail-action" id="detail-btn-cancel">
+                      ${Icons.x('', 16)} <span>Ya no asistiré</span>
+                    </button>
+                  </div>
+                ` : ''}
+
+                <!-- Opción 4: Descartar Registro Anulado (Estudiante con entrada eliminada por admin) -->
+                ${isCurrentStudent && isDeletedByAdmin ? `
+                  <div class="detail-option-card danger-option">
+                    <div class="opt-icon-box red">
+                      ${Icons.trash('', 24)}
+                    </div>
+                    <div class="opt-content">
+                      <h4>Descartar Registro de mi Lista</h4>
+                      <p>Esta entrada fue anulada por la administración. Puedes removerla definitivamente de tu historial.</p>
+                    </div>
+                    <button type="button" class="btn btn-danger btn-detail-action" id="detail-btn-dismiss">
+                      ${Icons.trash('', 16)} <span>Descartar Entrada</span>
+                    </button>
+                  </div>
+                ` : ''}
+
+                <!-- Opción 5: Validación Administrativa (Admin / Tutor con comprobante pendiente) -->
+                ${currentCanManage && isPending ? `
+                  <div class="detail-option-card admin-option">
+                    <div class="opt-icon-box amber">
+                      ${Icons.clock('', 24)}
+                    </div>
+                    <div class="opt-content">
+                      <h4>Validación Administrativa de Pago</h4>
+                      <p>Comprueba la acreditación bancaria y aprueba o rechaza el acceso oficial del estudiante.</p>
+                    </div>
+                    <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+                      <button type="button" class="btn btn-success btn-detail-action" id="detail-btn-approve">
+                        ${Icons.check('', 16)} <span>Aprobar</span>
+                      </button>
+                      <button type="button" class="btn btn-danger-outline btn-detail-action" id="detail-btn-reject">
+                        ${Icons.x('', 16)} <span>Rechazar</span>
+                      </button>
+                    </div>
+                  </div>
+                ` : ''}
+
+                <!-- Opción 6: Eliminar / Purgar Registro (Admin) -->
+                ${currentCanManage ? `
+                  <div class="detail-option-card" style="border-left:4px solid #b91c1c;">
+                    <div class="opt-icon-box red">
+                      ${Icons.trash('', 24)}
+                    </div>
+                    <div class="opt-content">
+                      <h4>Gestión de Base de Datos</h4>
+                      <p>${isCancelled ? 'Purgar definitivamente este registro cancelado de la base de datos.' : 'Anular esta entrada y liberar el cupo en el sistema.'}</p>
+                    </div>
+                    <button type="button" class="btn btn-danger-outline btn-detail-action" id="detail-btn-admin-delete">
+                      ${Icons.trash('', 16)} <span>${isCancelled ? 'Purgar Registro' : 'Eliminar Entrada'}</span>
+                    </button>
+                  </div>
+                ` : ''}
+              </div>
+            </div>
+          </div>
+        `;
+
+        // ─── Listeners de la Pantalla de Detalle ───────────────────────────
+        // 1. Botón Volver
+        const backBtn = bodyContainer.querySelector('#btn-back-to-bookings');
+        if (backBtn) {
+          backBtn.addEventListener('click', () => {
+            selectedBookingId = null;
+            this._renderList();
+            container.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          });
+        }
+
+        // 2. Ver Entrada QR (TicketModal)
+        const qrBtn = bodyContainer.querySelector('#detail-btn-qr');
+        if (qrBtn) {
+          qrBtn.addEventListener('click', () => {
+            TicketModal.open(booking, course, tutoria, student);
+          });
+        }
+
+        // 3. Ver Recibo de Pago
+        const receiptBtn = bodyContainer.querySelector('#detail-btn-receipt');
+        if (receiptBtn && receipt) {
+          receiptBtn.addEventListener('click', () => {
+            this.openReceiptModal(receipt, booking, currentCanManage);
+          });
+        }
+
+        // 4. Cancelar Asistencia ("Ya no asistiré")
+        const cancelBtn = bodyContainer.querySelector('#detail-btn-cancel');
+        if (cancelBtn) {
+          cancelBtn.addEventListener('click', () => {
+            Modal.confirm({
+              title: '¿Confirmar que ya no asistirás?',
+              message: `¿Estás seguro de cancelar tu asistencia a <strong>${eventTitle}</strong>?<br><br><small style="color:#64748b;">Tu entrada digital QR será invalidada y tu cupo se liberará automáticamente para otro estudiante.</small>`,
+              confirmText: 'Sí, ya no asistiré',
+              cancelText: 'Volver atrás',
+              danger: true,
+              onConfirm: async () => {
+                await this.updateStatus(booking.id, 'cancelled');
+                this._renderList();
+              },
+            });
+          });
+        }
+
+        // 5. Descartar Registro Anulado
+        const dismissBtn = bodyContainer.querySelector('#detail-btn-dismiss');
+        if (dismissBtn) {
+          dismissBtn.addEventListener('click', () => {
+            Modal.confirm({
+              title: '¿Descartar este registro?',
+              message: '¿Deseas borrar este registro anulado de tu lista de entradas?<br><br><small style="color:#64748b;">Ya tienes permitido volver a inscribirte a este curso cuando desees.</small>',
+              confirmText: 'Sí, descartar de mi lista',
+              cancelText: 'Conservar',
+              danger: true,
+              onConfirm: async () => {
+                try {
+                  await api.bookings.delete(booking.id);
+                  store.setState({ bookings: store.getState().bookings.filter((x) => x.id !== booking.id) });
+                  Toast.success('Registro descartado de tu historial.');
+                  selectedBookingId = null;
+                  this._renderList();
+                } catch (err) {
+                  Toast.error(err.message || 'No se pudo descartar el registro.');
+                }
+              },
+            });
+          });
+        }
+
+        // 6. Aprobar Comprobante (Admin)
+        const approveBtn = bodyContainer.querySelector('#detail-btn-approve');
+        if (approveBtn) {
+          approveBtn.addEventListener('click', () => {
+            this.confirmReceiptApproval(booking);
+          });
+        }
+
+        // 7. Rechazar Comprobante (Admin)
+        const rejectBtn = bodyContainer.querySelector('#detail-btn-reject');
+        if (rejectBtn) {
+          rejectBtn.addEventListener('click', () => {
+            this.confirmReceiptRejection(booking);
+          });
+        }
+
+        // 8. Eliminar / Purgar Registro (Admin)
+        const adminDeleteBtn = bodyContainer.querySelector('#detail-btn-admin-delete');
+        if (adminDeleteBtn) {
+          adminDeleteBtn.addEventListener('click', () => {
+            const studentName = student?.name || 'este estudiante';
+            const isAlreadyCancelled = booking.status === 'cancelled';
+
+            Modal.confirm({
+              title: isAlreadyCancelled ? '¿Eliminar registro definitivamente?' : '¿Eliminar entrada del registro?',
+              message: isAlreadyCancelled
+                ? `¿Deseas purgar definitivamente este registro de <strong>${studentName}</strong> de la base de datos?`
+                : `¿Estás seguro de anular y eliminar la entrada de <strong>${studentName}</strong> para <strong>"${eventTitle}"</strong>?`,
+              confirmText: isAlreadyCancelled ? 'Sí, purgar registro' : 'Sí, anular y eliminar',
+              cancelText: 'Volver',
+              danger: true,
+              onConfirm: async () => {
+                try {
+                  if (isAlreadyCancelled) {
+                    await api.bookings.delete(booking.id);
+                    store.setState({ bookings: store.getState().bookings.filter((x) => x.id !== booking.id) });
+                    Toast.success('Registro eliminado definitivamente de la base de datos.');
+                    selectedBookingId = null;
+                  } else {
+                    const newReceiptUrl = (booking.receiptUrl ? booking.receiptUrl + '###deleted_by_admin' : 'deleted_by_admin');
+                    await api.bookings.update(booking.id, {
+                      status: 'cancelled',
+                      receiptUrl: newReceiptUrl,
+                    });
+                    const fresh = await api.bookings.getAll();
+                    store.setState({ bookings: fresh });
+                    Toast.success('Entrada eliminada por administración y cupo liberado.');
+                  }
+                  this._renderList();
+                } catch (err) {
+                  Toast.error(err.message || 'Error al procesar la eliminación.');
+                }
+              },
+            });
+          });
+        }
+
+        return;
+      }
+
+      // ─── PANTALLA 1: LISTADO DE RECUADROS DE EVENTOS CON BOTÓN "VER ENTRADA" ─
       // 1. Filtrar según la pestaña seleccionada
       let bookings = allUserBookings;
       if (currentCanManage && filterStatus !== 'all') {
@@ -66,7 +424,6 @@ export const BookingsView = {
       }
 
       // Renderizar barra de control superior (Pestañas reordenadas por prioridad + Buscador)
-      const filterTabsContainer = container.querySelector('#bookings-filter-tabs');
       if (filterTabsContainer) {
         filterTabsContainer.innerHTML = `
           <div style="display:flex; justify-content:space-between; align-items:center; gap:0.75rem; margin-bottom:1.15rem; flex-wrap:wrap;">
@@ -84,11 +441,11 @@ export const BookingsView = {
                   Todos los Registros (${countAll})
                 </button>
               ` : `
-                <span style="font-size:0.85rem; font-weight:700; color:#002855;">Mis Inscripciones Académicas (${countAll})</span>
+                <span style="font-size:0.9rem; font-weight:800; color:#002855;">Mis Entradas Oficiales (${countAll})</span>
               `}
             </div>
 
-            <!-- Buscador en tiempo real por Nombres / Email -->
+            <!-- Buscador en tiempo real por Nombres / Email / Curso -->
             <div style="position:relative; min-width:260px; flex:1; max-width:360px;">
               <span style="position:absolute; left:0.75rem; top:50%; transform:translateY(-50%); color:#94a3b8; pointer-events:none; display:flex; align-items:center;">
                 ${Icons.search('', 15)}
@@ -97,7 +454,7 @@ export const BookingsView = {
                 type="text" 
                 id="bookings-search-input" 
                 class="form-control" 
-                placeholder="Buscar por estudiante, correo o curso..." 
+                placeholder="Buscar por curso, taller o fecha..." 
                 value="${searchQuery}" 
                 style="padding-left:2.2rem; padding-right:2rem; font-size:0.84rem; height:36px; border-radius:8px;" 
               />
@@ -125,7 +482,6 @@ export const BookingsView = {
           searchInput.addEventListener('input', (e) => {
             searchQuery = e.target.value;
             currentPage = 1;
-            // Preservar foco y cursor
             const start = e.target.selectionStart;
             const end = e.target.selectionEnd;
             this._renderList();
@@ -147,9 +503,6 @@ export const BookingsView = {
         }
       }
 
-      const bodyContainer = container.querySelector('#bookings-table-container');
-      if (!bodyContainer) return;
-
       if (bookings.length === 0) {
         bodyContainer.innerHTML = '';
         bodyContainer.appendChild(
@@ -159,7 +512,7 @@ export const BookingsView = {
               ? `Sin resultados para "${searchQuery}"`
               : (isCurrentStudent ? 'No tienes entradas activas' : (filterStatus === 'pending' ? 'No hay comprobantes pendientes' : 'No hay reservas registradas')),
             description: q
-              ? 'Verifica la ortografía o intenta buscar con otro nombre, correo o título de curso.'
+              ? 'Verifica la ortografía o intenta buscar con otro término de búsqueda.'
               : (isCurrentStudent
                 ? 'Inscríbete a bootcamps, talleres prácticos o hackathons para generar tu entrada QR oficial.'
                 : (filterStatus === 'pending'
@@ -174,188 +527,59 @@ export const BookingsView = {
         return;
       }
 
-      // Agrupar reservas por Evento / Curso para presentación desacoplada y ordenada
-      const eventGroupsMap = new Map();
-      bookings.forEach((b) => {
-        const eventId = b.courseId || b.tutoriaId || 'general';
-        if (!eventGroupsMap.has(eventId)) {
-          const course = currentState.courses?.find((c) => c.id === b.courseId) || b.course;
-          const tutoria = currentState.tutorias?.find((t) => t.id === b.tutoriaId) || b.tutoria;
-          const parsed = course ? parseCourseDescription(course) : null;
-          const eventTitle = course?.title || tutoria?.title || 'Evento / Sesión Académica';
-          const lowerTitle = eventTitle.toLowerCase();
-          const eventPrice = (course && typeof course.price === 'number' && course.price > 0)
-            ? course.price
-            : (parsed?.price ?? 0);
-          const eventCategory = (course && course.category && course.category !== 'Académico')
-            ? course.category
-            : (lowerTitle.includes('bootcamp') ? 'Bootcamp' : (lowerTitle.includes('hackathon') ? 'Hackathon' : (lowerTitle.includes('ciberseguridad') ? 'Ciberseguridad' : (lowerTitle.includes('certificaci') ? 'Certificación' : (lowerTitle.includes('taller') ? 'Taller' : 'Académico')))));
-          const eventSchedule = course?.scheduledAt || b.scheduledAt;
-
-          eventGroupsMap.set(eventId, {
-            id: eventId,
-            title: eventTitle,
-            category: eventCategory,
-            price: eventPrice,
-            schedule: eventSchedule,
-            items: [],
-          });
-        }
-        eventGroupsMap.get(eventId).items.push(b);
-      });
-
-      const eventGroups = Array.from(eventGroupsMap.values());
-      const pagination = Pagination.paginate(eventGroups, currentPage, 4);
+      // Paginación de Entradas
+      const pagination = Pagination.paginate(bookings, currentPage, 5);
       currentPage = pagination.currentPage;
 
+      // Renderizar Recuadros de Eventos Limpios con Botón Único "Ver Entrada"
       bodyContainer.innerHTML = `
-        <div class="event-bookings-container" style="display:flex; flex-direction:column; gap:1.35rem;">
-          ${pagination.items.map((group) => {
-            const totalInscritos = group.items.length;
-            const pendingInscritos = group.items.filter((x) => x.status === 'pending').length;
-            const confirmedInscritos = group.items.filter((x) => x.status === 'confirmed').length;
+        <div class="booking-entries-grid">
+          ${pagination.items.map((b) => {
+            const course = currentState.courses?.find((c) => c.id === b.courseId) || b.course;
+            const tutoria = currentState.tutorias?.find((t) => t.id === b.tutoriaId) || b.tutoria;
+            const parsed = course ? parseCourseDescription(course) : null;
+            const eventTitle = course?.title || tutoria?.title || 'Evento / Sesión Académica';
+            const lowerTitle = eventTitle.toLowerCase();
+            const eventPrice = (course && typeof course.price === 'number' && course.price > 0)
+              ? course.price
+              : (parsed?.price ?? 0);
+            const eventCategory = (course && course.category && course.category !== 'Académico')
+              ? course.category
+              : (lowerTitle.includes('bootcamp') ? 'Bootcamp' : (lowerTitle.includes('hackathon') ? 'Hackathon' : (lowerTitle.includes('ciberseguridad') ? 'Ciberseguridad' : (lowerTitle.includes('taller') ? 'Taller' : 'Académico'))));
+
+            const isCancelled = b.status === 'cancelled';
+            const isPending = b.status === 'pending';
+            const cardClass = isPending ? 'entry-pending' : (isCancelled ? 'entry-cancelled' : '');
+            const modalityText = tutoria?.modality === 'presencial' ? 'Presencial (Campus UPDS)' : 'Virtual en Vivo (Meet)';
+            const studentInfo = currentCanManage
+              ? `<span style="color:#0284c7; font-weight:700;">${Icons.user('', 13)} ${b.student?.name || 'Estudiante UPDS'}</span>`
+              : '';
 
             return `
-              <div class="card event-booking-card" style="border:1px solid #e2e8f0; border-radius:12px; overflow:hidden; box-shadow:0 2px 5px rgba(0,0,0,0.03); ${pendingInscritos > 0 && currentCanManage ? 'border-left:5px solid #f59e0b;' : 'border-left:5px solid #002855;'}">
-                <!-- Cabecera del Contenedor de Evento -->
-                <div style="background:#f8fafc; border-bottom:1px solid #e2e8f0; padding:0.9rem 1.25rem; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.75rem;">
-                  <div style="display:flex; align-items:center; gap:0.75rem;">
-                    <div style="width:36px; height:36px; border-radius:8px; background:#eff6ff; color:#0284c7; display:flex; align-items:center; justify-content:center; font-weight:800; flex-shrink:0;">
-                      ${Icons.calendar('', 20)}
-                    </div>
-                    <div>
-                      <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
-                        <h3 style="margin:0; font-size:1.02rem; font-weight:700; color:#002855;">${group.title}</h3>
-                        <span class="badge badge-info" style="font-size:0.75rem; text-transform:capitalize;">${group.category || 'Académico'}</span>
-                        ${group.price > 0 ? `<span class="badge" style="background:#ecfdf5; color:#047857; font-weight:700; border:1px solid #a7f3d0; font-size:0.75rem;">${group.price} Bs</span>` : '<span class="badge" style="background:#f1f5f9; color:#475569; font-size:0.75rem;">Gratuito</span>'}
-                      </div>
-                      <span style="font-size:0.78rem; color:#64748b;">
-                        ${group.schedule ? `📅 Fecha programada: ${Badge.formatDate(group.schedule)}` : 'Sesión académica programada'}
-                      </span>
-                    </div>
+              <div class="card booking-entry-card ${cardClass}">
+                <div class="booking-entry-left">
+                  <div class="booking-entry-icon">
+                    ${Icons.ticket('', 22)}
                   </div>
-
-                  <!-- Métricas Rápidas del Evento -->
-                  <div style="display:flex; align-items:center; gap:0.45rem; flex-wrap:wrap;">
-                    <span class="badge badge-info" style="font-size:0.75rem;">👥 ${totalInscritos} ${totalInscritos === 1 ? 'entrada' : 'entradas'}</span>
-                    ${pendingInscritos > 0 ? `<span class="badge badge-warning" style="font-size:0.75rem; font-weight:700;">🟡 ${pendingInscritos} por verificar</span>` : ''}
-                    ${confirmedInscritos > 0 ? `<span class="badge badge-success" style="font-size:0.75rem;">🟢 ${confirmedInscritos} confirmadas</span>` : ''}
+                  <div class="booking-entry-info">
+                    <div class="booking-entry-tags">
+                      <span class="badge badge-info" style="font-size:0.74rem;">${eventCategory}</span>
+                      ${eventPrice > 0 ? `<span class="badge" style="background:#ecfdf5; color:#047857; font-weight:700; border:1px solid #a7f3d0; font-size:0.74rem;">${eventPrice} Bs</span>` : '<span class="badge" style="background:#f1f5f9; color:#475569; font-size:0.74rem;">Gratuito</span>'}
+                      ${Badge.bookingStatus(b.status, b.receiptUrl)}
+                    </div>
+                    <h3 class="booking-entry-title">${eventTitle}</h3>
+                    <div class="booking-entry-meta">
+                      <span>${Icons.calendar('', 13)} ${Badge.formatDate(b.scheduledAt)}</span>
+                      <span>${Icons.building('', 13)} ${modalityText}</span>
+                      ${studentInfo}
+                    </div>
                   </div>
                 </div>
 
-                <!-- Tabla de Entradas de este Evento -->
-                <div class="table-responsive" style="margin:0;">
-                  <table class="table" style="margin-bottom:0;">
-                    <thead>
-                      <tr style="background:#ffffff; border-bottom:1px solid #e2e8f0;">
-                        ${currentCanManage ? '<th style="font-size:0.8rem;">Estudiante</th>' : ''}
-                        <th style="font-size:0.8rem;">Sesión / Modalidad</th>
-                        <th style="font-size:0.8rem;">Fecha de Registro</th>
-                        <th style="font-size:0.8rem;">Estado Actual</th>
-                        <th class="text-right" style="font-size:0.8rem;">Acciones</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      ${group.items.map((b) => {
-                        const isOwn = b.studentId === currentState.activeUser?.id;
-                        const isCancelled = b.status === 'cancelled';
-                        const isDeletedByAdmin = isCancelled && typeof b.receiptUrl === 'string' && b.receiptUrl.includes('deleted_by_admin');
-                        const isPending = b.status === 'pending';
-
-                        // Comprobante oficial alojado en PostgreSQL (b.receiptUrl)
-                        let receipt = null;
-                        const rawUrl = b.receiptUrl || '';
-                        const cleanImage = rawUrl.includes('data:image') || rawUrl.startsWith('http') ? rawUrl.split('###')[0] : null;
-                        if (cleanImage) {
-                          receipt = {
-                            bookingId: b.id,
-                            studentName: b.student?.name || 'Estudiante UPDS',
-                            studentEmail: b.student?.email || 'estudiante@upds.edu.bo',
-                            courseTitle: b.course?.title || group.title,
-                            amount: group.price > 0 ? `${group.price} Bs` : 'Arancel UPDS',
-                            uploadedAt: b.createdAt || b.scheduledAt,
-                            receiptImage: cleanImage,
-                            status: b.status,
-                            isDemoReceipt: false,
-                          };
-                        } else {
-                          receipt = getBookingReceipt(b.id);
-                        }
-
-                        if (!receipt && isPending) {
-                          receipt = {
-                            bookingId: b.id,
-                            studentName: b.student?.name || 'Estudiante UPDS',
-                            studentEmail: b.student?.email || 'estudiante@upds.edu.bo',
-                            courseTitle: b.course?.title || group.title,
-                            amount: group.price > 0 ? `${group.price} Bs` : 'Arancel UPDS',
-                            uploadedAt: b.scheduledAt || new Date().toISOString(),
-                            receiptImage: 'img/upds-logo.png',
-                            status: 'pending',
-                            isDemoReceipt: true,
-                          };
-                        }
-
-                        return `
-                          <tr>
-                            ${currentCanManage ? `
-                              <td>
-                                <div class="font-semibold" style="color:var(--primary-navy);">${b.student?.name || 'Estudiante UPDS'}</div>
-                                <small class="text-muted">${b.student?.email || ''}</small>
-                              </td>
-                            ` : ''}
-                            <td>
-                              ${b.tutoria ? `<span class="tutoria-ref-badge">${b.tutoria.title}</span>` : '<span class="text-muted">Acceso General</span>'}
-                            </td>
-                            <td>${Badge.formatDate(b.scheduledAt)}</td>
-                            <td>${Badge.bookingStatus(b.status, b.receiptUrl)}</td>
-                            <td class="text-right">
-                              <div class="action-btn-group" style="display:inline-flex; align-items:center; gap:0.35rem; justify-content:flex-end;">
-                                ${receipt ? `
-                                  <button class="btn btn-xs btn-outline btn-view-receipt" data-id="${b.id}" title="Ver Comprobante de Pago Bancario" style="display:inline-flex; align-items:center; gap:0.25rem; font-weight:700; color:#0284c7; border-color:#bae6fd; background:#f0f9ff;">
-                                    ${Icons.fileText('', 12)} Ver Recibo
-                                  </button>
-                                ` : ''}
-
-                                ${currentCanManage && isPending ? `
-                                  <button class="btn btn-xs btn-success btn-confirm-receipt" data-id="${b.id}" title="Aprobar Comprobante e Inscripción" style="display:inline-flex; align-items:center; gap:0.25rem; font-weight:700; background:#16a34a; color:#fff; border-color:#16a34a;">
-                                    ${Icons.check('', 12)} Aprobar
-                                  </button>
-                                  <button class="btn btn-xs btn-danger-outline btn-reject-receipt" data-id="${b.id}" title="Rechazar Comprobante con Motivo" style="display:inline-flex; align-items:center; gap:0.25rem; font-weight:700; color:#dc2626; border-color:#fca5a5; background:#fef2f2;">
-                                    ${Icons.x('', 12)} Rechazar
-                                  </button>
-                                ` : ''}
-
-                                ${(!isPending || !currentCanManage) ? `
-                                  <button class="btn btn-xs btn-outline btn-show-ticket" data-id="${b.id}" title="${isPending ? 'Ver Entrada Provisional' : (isCancelled ? 'Ver Entrada Cancelada' : 'Ver Entrada Digital / QR')}" style="display:inline-flex; align-items:center; gap:0.25rem; font-weight:600; color:${isCancelled ? '#64748b' : (isPending ? '#b45309' : 'var(--primary-navy)')};">
-                                    ${Icons.ticket('', 12)} ${isPending ? 'Entrada (En espera)' : (isCancelled ? 'Entrada (Cancelada)' : 'Ver Entrada QR')}
-                                  </button>
-                                ` : ''}
-
-                                ${isCurrentStudent && !isCancelled && !isPending ? `
-                                  <button class="btn btn-xs btn-danger-outline btn-cancel-attendance" data-id="${b.id}" title="Cancelar mi asistencia" style="display:inline-flex; align-items:center; gap:0.25rem; font-weight:600;">
-                                    ${Icons.x('', 12)} Ya no asistiré
-                                  </button>
-                                ` : ''}
-
-                                ${isCurrentStudent && isDeletedByAdmin ? `
-                                  <button class="btn btn-xs btn-danger-outline btn-student-dismiss-booking" data-id="${b.id}" title="Descartar este registro de mi historial" style="display:inline-flex; align-items:center; gap:0.25rem; font-weight:700; color:#dc2626; border-color:#fca5a5; background:#fef2f2;">
-                                    ${Icons.trash('', 12)} Descartar
-                                  </button>
-                                ` : ''}
-
-                                ${currentCanManage ? `
-                                  <button class="btn btn-xs btn-danger-outline btn-admin-delete-booking" data-id="${b.id}" title="${isCancelled ? 'Eliminar definitivamente de la base de datos' : 'Eliminar del registro y anular cupo'}" style="display:inline-flex; align-items:center; gap:0.25rem; font-weight:600; color:#b91c1c; border-color:#fca5a5;">
-                                    ${Icons.trash('', 12)} Eliminar
-                                  </button>
-                                ` : ''}
-                              </div>
-                            </td>
-                          </tr>
-                        `;
-                      }).join('')}
-                    </tbody>
-                  </table>
+                <div class="booking-entry-right">
+                  <button type="button" class="btn btn-primary btn-open-ticket" data-id="${b.id}">
+                    ${Icons.ticket('', 16)} <span>Ver Entrada</span>
+                  </button>
                 </div>
               </div>
             `;
@@ -365,193 +589,22 @@ export const BookingsView = {
         ${Pagination.renderHTML(pagination)}
       `;
 
-      // Eventos de paginación
+      // Eventos de Paginación
       Pagination.bindEvents(bodyContainer, (newPage) => {
         currentPage = newPage;
         this._renderList();
         container.scrollIntoView({ behavior: 'smooth', block: 'start' });
       });
 
-      // Evento: Ver Recibo de Pago
-      bodyContainer.querySelectorAll('.btn-view-receipt').forEach((btn) => {
+      // Evento: Clic en "Ver Entrada" lleva a la otra pantalla (Pantalla de Detalle)
+      bodyContainer.querySelectorAll('.btn-open-ticket').forEach((btn) => {
         btn.addEventListener('click', () => {
           const id = btn.getAttribute('data-id');
-          const booking = currentState.bookings.find((b) => b.id === id);
-          let receipt = null;
-
-          const rawUrl = booking?.receiptUrl || '';
-          const cleanImage = rawUrl.includes('data:image') || rawUrl.startsWith('http') ? rawUrl.split('###')[0] : null;
-          if (cleanImage) {
-            receipt = {
-              bookingId: booking.id,
-              studentName: booking.student?.name || 'Estudiante UPDS',
-              studentEmail: booking.student?.email || 'estudiante@upds.edu.bo',
-              courseTitle: booking.course?.title || 'Curso / Taller Académico',
-              amount: 'Arancel UPDS',
-              uploadedAt: booking.createdAt || booking.scheduledAt,
-              receiptImage: cleanImage,
-              status: booking.status,
-              isDemoReceipt: false,
-            };
-          } else {
-            receipt = getBookingReceipt(id);
-          }
-
-          if (!receipt && booking?.status === 'pending') {
-            receipt = {
-              bookingId: booking.id,
-              studentName: booking.student?.name || 'Estudiante UPDS',
-              studentEmail: booking.student?.email || 'estudiante@upds.edu.bo',
-              courseTitle: booking.course?.title || 'Curso / Taller Académico',
-              amount: 'Arancel UPDS',
-              uploadedAt: booking.scheduledAt || new Date().toISOString(),
-              receiptImage: 'img/upds-logo.png',
-              status: 'pending',
-              isDemoReceipt: true,
-            };
-          }
-          if (!receipt) {
-            Toast.info('Esta inscripción fue registrada como gratuita sin comprobante de pago.');
-            return;
-          }
-          this.openReceiptModal(receipt, booking, currentCanManage);
+          selectedBookingId = id;
+          this._renderList();
+          container.scrollIntoView({ behavior: 'smooth', block: 'start' });
         });
       });
-
-      // Evento: Aprobar Recibo e Inscripción Directamente
-      bodyContainer.querySelectorAll('.btn-confirm-receipt').forEach((btn) => {
-        btn.addEventListener('click', () => {
-          const id = btn.getAttribute('data-id');
-          const booking = currentState.bookings.find((b) => b.id === id);
-          if (booking) this.confirmReceiptApproval(booking);
-        });
-      });
-
-      // Evento: Rechazar Recibo con Motivo
-      bodyContainer.querySelectorAll('.btn-reject-receipt').forEach((btn) => {
-        btn.addEventListener('click', () => {
-          const id = btn.getAttribute('data-id');
-          const booking = currentState.bookings.find((b) => b.id === id);
-          if (booking) this.confirmReceiptRejection(booking);
-        });
-      });
-
-      // Evento: Cancelar Asistencia ("Ya no asistiré")
-      bodyContainer.querySelectorAll('.btn-cancel-attendance').forEach((btn) => {
-        btn.addEventListener('click', () => {
-          const id = btn.getAttribute('data-id');
-          const latestState = store.getState();
-          const booking = latestState.bookings.find((b) => b.id === id);
-          const courseTitle = booking?.course?.title || booking?.tutoria?.title || 'este programa';
-
-          Modal.confirm({
-            title: '¿Confirmar que ya no asistirás?',
-            message: `¿Estás seguro de cancelar tu asistencia a <strong>${courseTitle}</strong>?<br><br><small style="color:#64748b;">Tu entrada digital QR será invalidada y tu cupo se liberará automáticamente para otro estudiante.</small>`,
-            confirmText: 'Sí, ya no asistiré',
-            cancelText: 'Volver atrás',
-            danger: true,
-            onConfirm: async () => {
-              await this.updateStatus(id, 'cancelled');
-              Toast.info('Has cancelado tu asistencia. Tu cupo ha sido liberado.');
-            },
-          });
-        });
-      });
-
-      // Evento: Ver Entrada Digital QR
-      bodyContainer.querySelectorAll('.btn-show-ticket').forEach((btn) => {
-        btn.addEventListener('click', () => {
-          const id = btn.getAttribute('data-id');
-          const latestState = store.getState();
-          const booking = latestState.bookings.find((b) => b.id === id);
-          if (booking) {
-            const course = latestState.courses.find((c) => c.id === booking.courseId) || booking.course;
-            const tutoria = latestState.tutorias.find((t) => t.id === booking.tutoriaId) || booking.tutoria;
-            const student = latestState.users.find((u) => u.id === booking.studentId) || booking.student || latestState.activeUser;
-            TicketModal.open(booking, course, tutoria, student);
-          }
-        });
-      });
-
-      // Evento: Eliminar / Anular Reserva desde el lado del Administrador
-      bodyContainer.querySelectorAll('.btn-admin-delete-booking').forEach((btn) => {
-        btn.addEventListener('click', () => {
-          const id = btn.getAttribute('data-id');
-          const latestState = store.getState();
-          const booking = latestState.bookings.find((b) => b.id === id);
-          if (!booking) return;
-
-          const studentName = booking.student?.name || 'este estudiante';
-          const courseTitle = booking.course?.title || booking.tutoria?.title || 'este programa';
-          const isAlreadyCancelled = booking.status === 'cancelled';
-
-          Modal.confirm({
-            title: isAlreadyCancelled ? '¿Eliminar registro definitivamente?' : '¿Eliminar entrada del registro?',
-            message: isAlreadyCancelled
-              ? `¿Deseas purgar definitivamente este registro de <strong>${studentName}</strong> de la base de datos?<br><br><small style="color:#b91c1c;"><strong>Nota:</strong> El estudiante conservará el aviso en su bandeja de Notificaciones, pero desaparecerá de su tabla de entradas.</small>`
-              : `¿Estás seguro de anular y eliminar la entrada de <strong>${studentName}</strong> para <strong>"${courseTitle}"</strong>?<br><br><small style="color:#64748b;">La entrada se mantendrá visible para el estudiante como <strong>Eliminado por el Administrador</strong> para que esté debidamente informado, se liberará el cupo y podrá volver a inscribirse o descartar el aviso él mismo.</small>`,
-            confirmText: isAlreadyCancelled ? 'Sí, purgar registro' : 'Sí, anular y eliminar',
-            cancelText: 'Volver',
-            danger: true,
-            onConfirm: async () => {
-              try {
-                if (isAlreadyCancelled) {
-                  await api.bookings.delete(booking.id);
-                  store.setState({ bookings: store.getState().bookings.filter((x) => x.id !== booking.id) });
-                  Toast.success('Registro eliminado definitivamente de la base de datos.');
-                } else {
-                  const newReceiptUrl = (booking.receiptUrl ? booking.receiptUrl + '###deleted_by_admin' : 'deleted_by_admin');
-                  await api.bookings.update(booking.id, {
-                    status: 'cancelled',
-                    receiptUrl: newReceiptUrl,
-                  });
-
-                  if (booking.studentId) {
-                    api.notifications.create({
-                      userId: booking.studentId,
-                      title: `Entrada eliminada por Administración — ${courseTitle.slice(0, 30)}`,
-                      message: `Tu entrada para el programa "${courseTitle}" fue eliminada por la Administración UPDS. Tu cupo fue liberado. Ya puedes descartar este aviso o volver a inscribirte desde el catálogo.`,
-                      type: 'booking_update',
-                    }).catch(() => {});
-                  }
-
-                  const fresh = await api.bookings.getAll();
-                  store.setState({ bookings: fresh });
-                  Toast.success('Entrada eliminada por administración y cupo liberado.');
-                }
-                this._renderList();
-              } catch (err) {
-                Toast.error(err.message || 'Error al procesar la eliminación.');
-              }
-            },
-          });
-        });
-      });
-
-      // Evento: Descartar Registro Anulado (Exclusivo para el estudiante en registros eliminados por el admin)
-      bodyContainer.querySelectorAll('.btn-student-dismiss-booking').forEach((btn) => {
-        btn.addEventListener('click', () => {
-          const id = btn.getAttribute('data-id');
-          Modal.confirm({
-            title: '¿Descartar este registro?',
-            message: '¿Deseas borrar este registro anulado de tu lista de entradas?<br><br><small style="color:#64748b;">Ya tienes permitido volver a inscribirte a este curso cuando desees.</small>',
-            confirmText: 'Sí, descartar de mi lista',
-            cancelText: 'Conservar',
-            danger: true,
-            onConfirm: async () => {
-              try {
-                await api.bookings.delete(id);
-                store.setState({ bookings: store.getState().bookings.filter((x) => x.id !== id) });
-                Toast.success('Registro descartado de tu historial.');
-                this._renderList();
-              } catch (err) {
-                Toast.error(err.message || 'No se pudo descartar el registro.');
-              }
-            },
-          });
-        });
-      });
-
     };
 
     container.innerHTML = `

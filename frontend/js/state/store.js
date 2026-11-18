@@ -77,7 +77,7 @@ class Store {
         notificationUserId: '',
         userRole: '',
       },
-      isLoading: false,
+      isLoading: true,
       lastError: null,
     };
 
