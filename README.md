@@ -1,6 +1,9 @@
-# Sistema de Gestión de Cursos, Talleres & Hackathons (UPDS Cochabamba)
+# Eventos & Talleres UPDS — Plataforma Universitaria
 
-Plataforma universitaria full stack moderna para la gestión académica de tutorías, talleres prácticos, convocatorias a hackathons, reservas de sesiones con código QR y recursos educativos.
+Plataforma universitaria full stack moderna para la gestión académica y comunitaria de eventos, convocatorias a hackathons, talleres prácticos, reservas de entradas con código QR y colaboración estudiantil.
+
+> **Nota de Evolución del Proyecto:**
+> Este proyecto nació originalmente como *Sistema de Tutorías UPDS*. Debido a la expansión de requerimientos y al crecimiento del ecosistema universitario, su alcance se amplió hacia una plataforma integral de **Eventos, Talleres & Hackathons**, incorporando venta/emisión de pases QR, foros de debate, control de acceso por roles y un asistente de inteligencia artificial reactivo.
 
 [![CloudFront CDN](https://img.shields.io/badge/AWS%20CloudFront-d3i4klrqeo94p9.cloudfront.net-FF9900?logo=amazon-aws&logoColor=white)](https://d3i4klrqeo94p9.cloudfront.net/)
 [![Database](https://img.shields.io/badge/Supabase-PostgreSQL%2017-3ECF8E?logo=supabase&logoColor=white)](https://supabase.com)
@@ -9,14 +12,14 @@ Plataforma universitaria full stack moderna para la gestión académica de tutor
 [![Frontend](https://img.shields.io/badge/Frontend-Vanilla%20JS%20SPA%20(No%20Framework)-F7DF1E?logo=javascript&logoColor=black)](https://developer.mozilla.org/)
 
 - **Despliegue Global en Producción:** [https://d3i4klrqeo94p9.cloudfront.net/](https://d3i4klrqeo94p9.cloudfront.net/)
-- **Repositorio Oficial:** [github.com/Marce0c0/Sistema-Tutorias-UPDS](https://github.com/Marce0c0/Sistema-Tutorias-UPDS)
+- **Repositorio Oficial:** [github.com/Marce0c0/eventos-talleres-upds](https://github.com/Marce0c0/eventos-talleres-upds) *(Anteriormente Sistema-Tutorias-UPDS)*
 - **Desarrollador:** Sammy Marcelo Sivila Sanchez ([@Marce0c0](https://github.com/Marce0c0)) — Universidad Privada Domingo Savio (UPDS) Sede Cochabamba.
 
 ---
 
 ## 1. Descripción del Proyecto
 
-El **Sistema de Tutorías y Cursos UPDS** es una solución web integral diseñada bajo estándares institucionales de la **Universidad Privada Domingo Savio**. Conecta a estudiantes, tutores y administradores en un entorno ágil y reactivo, facilitando el agendamiento de reforzamiento académico, la inscripción a cursos técnicos con emisión inmediata de credenciales QR, y la colaboración continua mediante foros de debate y notificaciones en tiempo real.
+El proyecto **Eventos & Talleres UPDS** es una solución web integral diseñada bajo estándares institucionales de la **Universidad Privada Domingo Savio**. Conecta a estudiantes, docentes y administradores en un entorno ágil y reactivo, facilitando la inscripción a talleres técnicos, participación en hackathons competitivos con emisión inmediata de credenciales QR, y colaboración continua mediante foros de debate y notificaciones en tiempo real.
 
 ### ✨ Capacidades Principales
 

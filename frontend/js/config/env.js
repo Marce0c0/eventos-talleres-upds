@@ -41,18 +41,25 @@ export const safeSession = {
   },
 };
 
-const isLocalDev = typeof window !== 'undefined' && (
+const isLanOrLocal = typeof window !== 'undefined' && (
   window.location.hostname === 'localhost' ||
   window.location.hostname === '127.0.0.1' ||
   window.location.hostname === '' ||
-  window.location.protocol === 'file:'
+  window.location.protocol === 'file:' ||
+  /^192\.168\./.test(window.location.hostname) ||
+  /^10\./.test(window.location.hostname) ||
+  /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(window.location.hostname)
 );
-const DEFAULT_API_URL = isLocalDev ? 'http://localhost:3001' : '';
+const DEFAULT_API_URL = isLanOrLocal 
+  ? (typeof window !== 'undefined' && window.location.hostname && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1'
+      ? `http://${window.location.hostname}:3001`
+      : 'http://localhost:3001')
+  : '';
 
 export const ENV = {
   getApiUrl() {
-    // En desarrollo local siempre usar el backend local en puerto 3001
-    if (isLocalDev) {
+    // En desarrollo local o LAN siempre apuntar al backend en puerto 3001
+    if (isLanOrLocal) {
       return DEFAULT_API_URL;
     }
     const stored = safeStorage.getItem('UPDS_API_BASE_URL');

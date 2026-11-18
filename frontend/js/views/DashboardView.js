@@ -48,34 +48,17 @@ export const DashboardView = {
         ? tutorias.find((t) => t.id === nextBooking.tutoriaId) || nextBooking.tutoria
         : null;
 
-      // Banner de Bienvenida Estudiantil con Identidad UPDS
+      // Encabezado Minimalista Estudiantil (Tipografía Limpia, Cero Ruido)
       const banner = document.createElement('div');
-      banner.className = 'student-banner';
+      banner.className = 'minimal-welcome-header';
       banner.innerHTML = `
-        <div>
-          <h1 class="student-banner-title">
-            <span>¡Hola, <strong>${activeUser?.name || 'Estudiante'}</strong>! ${Icons.cap('', 22)}</span>
-          </h1>
-          <p class="student-banner-subtitle">
-            Bienvenido a tu portal de aprendizaje y talleres extracurriculares de la UPDS.
+        <div class="minimal-welcome-info">
+          <h1 class="minimal-welcome-title">¡Hola, <strong>${activeUser?.name || 'Estudiante'}</strong>!</h1>
+          <p class="minimal-welcome-subtitle">
             ${activeBookings.length > 0 
               ? `Tienes <strong>${activeBookings.length} ${activeBookings.length === 1 ? 'pase activo' : 'pases activos'}</strong> en tu credencial digital.` 
-              : 'Explora nuevos bootcamps y talleres prácticos para potenciar tu carrera.'}
+              : 'Explora cursos extracurriculares y talleres prácticos en el campus.'}
           </p>
-          <div class="student-quick-chips">
-            <button class="student-chip-btn" id="chip-btn-courses">
-              ${Icons.book('', 14)} Explorar Cursos & Talleres
-            </button>
-            <button class="student-chip-btn" id="chip-btn-bookings">
-              ${Icons.ticket('', 14)} Mis Entradas QR (${activeBookings.length})
-            </button>
-            <button class="student-chip-btn" id="chip-btn-forums">
-              ${Icons.chat('', 14)} Foro de Consultas
-            </button>
-            <button class="student-chip-btn" id="chip-btn-events">
-              ${Icons.star('', 14)} Convocatorias & Actividades
-            </button>
-          </div>
         </div>
       `;
       container.appendChild(banner);
@@ -91,45 +74,34 @@ export const DashboardView = {
           : (nextTutoria?.meetingUrl ? 'Sesión Virtual Online' : 'Enlace Virtual UPDS');
 
         heroContainer.className = 'student-hero-pass animate-fade-in';
-        if (!isConfirmed) {
-          heroContainer.style.borderTopColor = '#d97706';
-        }
 
         const badgeHtml = isConfirmed
-          ? `<div class="student-hero-badge">
-              <span class="badge-status-dot"></span> Próxima Clase Confirmada
-            </div>`
-          : `<div class="student-hero-badge" style="background:#fef3c7; color:#92400e; border:1px solid #fde68a;">
-              <span class="badge-status-dot" style="background-color:#f59e0b; box-shadow:0 0 8px #f59e0b;"></span> Entrada en Confirmación
-            </div>`;
+          ? `<span class="badge badge-success" style="font-size:0.75rem; font-weight:700; display:inline-flex; align-items:center; gap:0.45rem; padding:4px 10px; border-radius:9999px;">
+              <span class="badge-status-dot" style="background:#10b981; flex-shrink:0;"></span> <span>Próximo Taller Confirmado</span>
+            </span>`
+          : `<span class="badge badge-warning" style="font-size:0.75rem; font-weight:700; display:inline-flex; align-items:center; gap:0.45rem; padding:4px 10px; border-radius:9999px;">
+              <span class="badge-status-dot" style="background:#f59e0b; flex-shrink:0;"></span> <span>Entrada en Verificación</span>
+            </span>`;
 
         heroContainer.innerHTML = `
           <div class="student-hero-left">
-            ${badgeHtml}
+            <div style="margin-bottom:0.45rem;">
+              ${badgeHtml}
+            </div>
             <h2 class="student-hero-title">${nextCourse?.title || 'Bootcamp de Programación'}</h2>
             <div class="student-hero-subtitle">
-              <strong>Sesión:</strong> ${nextTutoria?.title || 'Clase Práctica con Docente Especialista'}
+              ${nextTutoria?.title || 'Clase Práctica con Docente Especialista'}
             </div>
             <div class="student-hero-meta-row">
-              <span class="student-hero-meta-item">
-                ${Icons.calendar('', 14)} <strong>${Badge.formatDate(nextBooking.scheduledAt)}</strong>
-              </span>
-              <span class="student-hero-meta-item">
-                ${modality === 'presencial' ? Icons.pin('', 14) : Icons.link('', 14)} 
-                ${venue}
-              </span>
-              <span class="student-hero-meta-item">
-                ${Icons.ticket('', 14)} Entrada <strong>#UPDS-${ticketCode}</strong>
-              </span>
+              <span>${Icons.calendar('', 13)} ${Badge.formatDate(nextBooking.scheduledAt)}</span>
+              <span>${modality === 'presencial' ? Icons.pin('', 13) : Icons.link('', 13)} ${venue}</span>
+              <span style="font-family:monospace; font-weight:700; color:#002855;">#UPDS-${ticketCode}</span>
             </div>
           </div>
           <div class="student-hero-right">
-            <button id="btn-hero-ticket" class="btn ${isConfirmed ? 'btn-primary' : 'btn-secondary'}" style="display:inline-flex; align-items:center; gap:0.4rem; font-weight:700; padding:0.65rem 1.25rem; ${!isConfirmed ? 'border-color:#d97706; color:#92400e; background:#fffbeb;' : ''}">
-              ${isConfirmed ? Icons.ticket('', 16) : Icons.clock('', 16)} ${isConfirmed ? 'Ver Entrada QR Oficial' : 'Ver Entrada por Confirmar'}
+            <button id="btn-hero-ticket" class="btn ${isConfirmed ? 'btn-primary' : 'btn-outline'}" style="display:inline-flex; align-items:center; gap:0.45rem; font-weight:700; padding:0.6rem 1.25rem;">
+              ${Icons.ticket('', 16)} <span>${isConfirmed ? 'Ver Entrada QR' : 'Ver Entrada (En espera)'}</span>
             </button>
-            <small style="color:${isConfirmed ? '#64748b' : '#b45309'}; font-size:0.75rem;">
-              ${isConfirmed ? 'Sincronizable con Google y Apple Wallet' : 'Comprobante en verificación por Administración UPDS'}
-            </small>
           </div>
         `;
 
@@ -140,15 +112,15 @@ export const DashboardView = {
         heroContainer.className = 'student-hero-empty animate-fade-in';
         heroContainer.innerHTML = `
           <div>
-            <h3 style="color:var(--primary-navy); font-weight:800; font-size:1.15rem; margin-bottom:0.25rem; display:flex; align-items:center; gap:0.4rem;">
-              ${Icons.ticket('', 20)} ¡Aún no tienes pases reservados para este mes!
+            <h3 style="color:var(--primary-navy); font-weight:800; font-size:1.1rem; margin-bottom:0.25rem; display:flex; align-items:center; gap:0.4rem;">
+              ${Icons.ticket('', 18)} No tienes pases activos para este mes
             </h3>
-            <p style="color:#475569; font-size:0.88rem; max-width:620px;">
-              Inscríbete a los talleres extracurriculares de programación, bases de datos o asesoría académica para asegurar tu cupo y obtener tu pase digital con código QR.
+            <p style="color:#64748b; font-size:0.85rem; max-width:600px; margin:0;">
+              Inscríbete a bootcamps, talleres prácticos o conferencias académicas para asegurar tu plaza con Código QR oficial.
             </p>
           </div>
           <button id="btn-hero-explore" class="btn btn-primary" style="font-weight:700; white-space:nowrap; display:inline-flex; align-items:center; gap:0.4rem;">
-            <span>Explorar Catálogo de Cursos</span> ${Icons.arrowRight('', 14)}
+            <span>Explorar Catálogo</span> ${Icons.arrowRight('', 14)}
           </button>
         `;
         heroContainer.querySelector('#btn-hero-explore')?.addEventListener('click', () => {
@@ -167,7 +139,7 @@ export const DashboardView = {
           title: 'Mis Pases Activos',
           value: activeBookings.length,
           icon: Icons.ticket('', 22),
-          subtitle: pendingCount > 0 ? `${activeBookings.length - pendingCount} confirmadas · ${pendingCount} por verificar` : 'Entradas QR listas para ingreso',
+          subtitle: pendingCount > 0 ? `${pendingCount} por verificar` : 'Entradas activas',
           color: 'blue',
           onClick: () => store.setView('bookings'),
         })
@@ -178,7 +150,7 @@ export const DashboardView = {
           title: 'Cursos & Talleres',
           value: courses.length,
           icon: Icons.book('', 22),
-          subtitle: 'Disponibles para inscribirte',
+          subtitle: 'Catálogo disponible',
           color: 'emerald',
           onClick: () => store.setView('courses'),
         })
@@ -186,10 +158,10 @@ export const DashboardView = {
 
       kpiGrid.appendChild(
         StatCard({
-          title: 'Consultas en Comunidad',
+          title: 'Foro Estudiantil',
           value: forums.length,
           icon: Icons.chat('', 22),
-          subtitle: 'Preguntas y debates activos',
+          subtitle: 'Debates y consultas',
           color: 'indigo',
           onClick: () => store.setView('forums'),
         })
@@ -198,10 +170,10 @@ export const DashboardView = {
       const eventsCount = (state.events && state.events.length) || 3;
       kpiGrid.appendChild(
         StatCard({
-          title: 'Convocatorias UPDS',
+          title: 'Convocatorias',
           value: eventsCount,
           icon: Icons.star('', 22),
-          subtitle: 'Hackathones, ferias y eventos',
+          subtitle: 'Eventos UPDS',
           color: 'amber',
           onClick: () => store.setView('events'),
         })
@@ -307,42 +279,7 @@ export const DashboardView = {
       splitSection.appendChild(bookingsBox);
       container.appendChild(splitSection);
 
-      // Callout Inferior: Foro de la Comunidad UPDS
-      const callout = document.createElement('div');
-      callout.className = 'student-community-callout';
-      callout.innerHTML = `
-        <div>
-          <h4 style="color:var(--primary-navy); font-weight:800; font-size:1.05rem; margin-bottom:0.25rem; display:flex; align-items:center; gap:0.4rem;">
-            <span>¿Tienes dudas con tus materias o proyectos?</span> ${Icons.chat('', 18)}
-          </h4>
-          <p style="color:#475569; font-size:0.85rem; max-width:650px;">
-            Participa en el Foro de la Comunidad Estudiantil UPDS. Pregunta a los docentes, comparte apuntes y colabora con otros estudiantes de tu carrera.
-          </p>
-        </div>
-        <button class="btn btn-sm btn-primary" id="btn-callout-forum" style="font-weight:700; white-space:nowrap; display:inline-flex; align-items:center; gap:0.4rem;">
-          <span>Ir al Foro de Consultas</span> ${Icons.arrowRight('', 14)}
-        </button>
-      `;
-      container.appendChild(callout);
-
       // Enlazar Eventos Estudiantiles
-      banner.querySelector('#chip-btn-courses')?.addEventListener('click', (e) => {
-        e?.preventDefault();
-        store.setView('courses');
-      });
-      banner.querySelector('#chip-btn-bookings')?.addEventListener('click', (e) => {
-        e?.preventDefault();
-        store.setView('bookings');
-      });
-      banner.querySelector('#chip-btn-forums')?.addEventListener('click', (e) => {
-        e?.preventDefault();
-        store.setView('forums');
-      });
-      banner.querySelector('#chip-btn-events')?.addEventListener('click', (e) => {
-        e?.preventDefault();
-        store.setView('events');
-      });
-
       coursesBox.querySelector('#dash-student-all-courses')?.addEventListener('click', (e) => {
         e?.preventDefault();
         store.setView('courses');
@@ -354,10 +291,6 @@ export const DashboardView = {
       bookingsBox.querySelector('#btn-empty-book')?.addEventListener('click', (e) => {
         e?.preventDefault();
         store.setView('courses');
-      });
-      callout.querySelector('#btn-callout-forum')?.addEventListener('click', (e) => {
-        e?.preventDefault();
-        store.setView('forums');
       });
 
       // Evento Ver Detalle de Curso Rápido
@@ -393,19 +326,16 @@ export const DashboardView = {
     const seesAllBookings = can(role, 'bookings.manage');
     const visibleBookings = seesAllBookings ? bookings : bookings.filter((b) => b.studentId === activeUser?.id);
 
-    // Banner de bienvenida y usuario en sesión
+    // Header minimalista institucional
     const banner = document.createElement('div');
-    banner.className = 'dashboard-banner';
+    banner.className = 'minimal-welcome-header';
     banner.innerHTML = `
-      <div class="banner-info">
-        <h1 class="banner-title">Panel Académico y Administrativo UPDS</h1>
-        <p class="banner-subtitle">
-          Bienvenido, <strong>${activeUser?.name || 'Usuario'}</strong>.
-          Tu rol activo en el sistema es ${Badge.role(role)}.
+      <div class="minimal-welcome-info">
+        <h1 class="minimal-welcome-title">${role === 'admin' ? 'Panel de Administración' : 'Panel Docente'}</h1>
+        <p class="minimal-welcome-subtitle">
+          Bienvenido, <strong>${activeUser?.name || 'Docente'}</strong>.
+          ${role === 'admin' ? 'Supervisión de cursos, usuarios y validación de entradas.' : 'Gestión de tus sesiones prácticas y asistencia.'}
         </p>
-      </div>
-      <div class="banner-badge">
-        <span class="badge-status-dot"></span> Campus UPDS · Supervisión Activa
       </div>
     `;
     container.appendChild(banner);
@@ -510,19 +440,6 @@ export const DashboardView = {
           <ul class="activity-list">
             ${upcomingSessions.map((t) => {
               const matchedCourse = t.course || courses.find((c) => c.id === t.courseId);
-              const titleLower = (t.title || '').toLowerCase();
-              const courseLower = (matchedCourse?.title || '').toLowerCase();
-
-              let typeBadge = '<span class="badge" style="background:#e0f2fe; color:#0369a1; font-size:0.68rem; padding:1px 6px;">Taller</span>';
-              if (titleLower.includes('taller') || courseLower.includes('taller') || titleLower.includes('laboratorio')) {
-                typeBadge = '<span class="badge" style="background:#e0f2fe; color:#0369a1; font-size:0.68rem; padding:1px 6px;">Taller</span>';
-              } else if (titleLower.includes('bootcamp') || courseLower.includes('bootcamp') || courseLower.includes('curso') || titleLower.includes('masterclass')) {
-                typeBadge = '<span class="badge" style="background:#f3e8ff; color:#7e22ce; font-size:0.68rem; padding:1px 6px;">Curso</span>';
-              } else if (titleLower.includes('hackathon') || courseLower.includes('hackathon') || titleLower.includes('ctf')) {
-                typeBadge = '<span class="badge" style="background:#fef3c7; color:#b45309; font-size:0.68rem; padding:1px 6px;">Hackathon</span>';
-              } else {
-                typeBadge = '<span class="badge" style="background:#e0f2fe; color:#0369a1; font-size:0.68rem; padding:1px 6px;">Taller Práctico</span>';
-              }
 
               return `
                 <li class="activity-item">
@@ -530,7 +447,6 @@ export const DashboardView = {
                   <div class="activity-content">
                     <div class="activity-title" style="display:flex; align-items:center; gap:0.4rem; flex-wrap:wrap;">
                       <span>${t.title}</span>
-                      ${typeBadge}
                     </div>
                     <div class="activity-meta">
                       <strong>${matchedCourse?.title || 'Programa Académico UPDS'}</strong> ·

@@ -116,8 +116,11 @@ export const NotFoundView = {
             font-weight: 700;
             color: #334155;
             margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
           ">
-            🔍 Búsqueda rápida en el catálogo de cursos:
+            ${Icons.search('', 15)} Búsqueda rápida en el catálogo de cursos:
           </label>
           <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
             <input
@@ -182,8 +185,11 @@ export const NotFoundView = {
             text-decoration: underline;
             cursor: pointer;
             padding: 4px;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
           ">
-            🚩 Reportar enlace roto al soporte
+            ${Icons.flag('', 14)} Reportar enlace roto al soporte
           </button>
         </div>
       </div>
@@ -250,7 +256,7 @@ export const NotFoundView = {
         return;
       }
       reported = true;
-      btnReport.textContent = '✅ Reporte enviado al equipo técnico';
+      btnReport.innerHTML = `${Icons.checkCircle('', 14)} <span>Reporte enviado al equipo técnico</span>`;
       btnReport.style.color = '#10b981';
       btnReport.style.textDecoration = 'none';
       btnReport.style.cursor = 'default';

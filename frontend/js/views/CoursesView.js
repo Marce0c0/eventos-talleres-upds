@@ -169,7 +169,6 @@ export const CoursesView = {
                 <div class="course-card-body-top">
                   <div class="course-card-header">
                     <div style="display:flex; align-items:center; gap:0.4rem; overflow:hidden;">
-                      <span class="course-tag">Curso & Taller Académico</span>
                       ${price > 0 
                         ? `<span class="badge" style="background:#e0f2fe; color:#0369a1; border:1px solid #bae6fd; font-weight:800; font-size:0.68rem; padding:0.15rem 0.45rem;">${price} Bs</span>` 
                         : `<span class="badge" style="background:#f0fdf4; color:#15803d; border:1px solid #bbf7d0; font-weight:800; font-size:0.68rem; padding:0.15rem 0.45rem;">Gratis</span>`
@@ -213,22 +212,13 @@ export const CoursesView = {
                     </div>
                   </div>
 
-                  <!-- Clases y Tutorías Programadas Integradas (Caja con Altura Uniforme) -->
-                  <div class="course-sessions-cluster">
-                    <div class="session-cluster-header">
-                      <span>${Icons.calendar('', 13)} Sesiones Programadas:</span>
-                      <span style="font-weight:700; color:var(--primary-navy);">
-                        ${sessions.length > 0 ? (sessions.length > 1 ? `1 de ${sessions.length} sesiones` : '1 sesión') : 'Por programar'}
-                      </span>
-                    </div>
-
+                  <!-- Resumen de Sesión Práctica Minimalista -->
+                  <div class="course-session-summary">
                     ${sessions.length > 0 ? (() => {
                       const s = sessions[0];
                       const bookingsCount = s._count?.bookings ?? (s.bookings?.length || 0);
                       const isSessionFull = bookingsCount >= s.maxStudents;
-                      const isPresencial = (s.modality || 'presencial').toLowerCase().includes('presencial');
                       const sessionDate = new Date(s.date).toLocaleDateString('es-ES', {
-                        weekday: 'short',
                         day: 'numeric',
                         month: 'short',
                         hour: '2-digit',
@@ -236,25 +226,21 @@ export const CoursesView = {
                       });
 
                       return `
-                        <div class="course-session-item">
-                          <div class="session-main-info">
-                            <span class="session-title-text" title="${s.title}">${s.title}</span>
-                            <span class="session-meta-text">
-                              ${isPresencial ? Icons.building('', 11) + ' ' + (s.location || 'Presencial') : Icons.laptop('', 11) + ' Virtual'} · ${sessionDate}
-                            </span>
-                          </div>
-                          <span class="session-seats-badge ${isSessionFull ? 'seats-full' : 'seats-available'}">
-                            ${isSessionFull ? 'Agotado' : `${s.maxStudents - bookingsCount} cupos`}
+                        <div class="session-flat-row">
+                          <span class="session-flat-date" title="${s.title} (${sessionDate})">
+                            ${Icons.calendar('', 13)} <span>${sessionDate}</span> · <span style="color:#64748b;">${s.location || 'Presencial'}</span>
+                          </span>
+                          <span class="session-flat-seats ${isSessionFull ? 'seats-full' : 'seats-available'}">
+                            ${isSessionFull ? 'Lleno' : `${s.maxStudents - bookingsCount} cupos`}
                           </span>
                         </div>
                       `;
                     })() : `
-                      <div class="course-session-item session-item-empty">
-                        <div class="session-main-info">
-                          <span class="session-title-text" style="color:#64748b; font-weight:500;">Próximamente nuevas fechas</span>
-                          <span class="session-meta-text">${Icons.calendar('', 11)} Consulta en secretaría académica</span>
-                        </div>
-                        <span class="session-seats-badge" style="background:#f1f5f9; color:#64748b;">
+                      <div class="session-flat-row">
+                        <span class="session-flat-date" style="color:#94a3b8;">
+                          ${Icons.calendar('', 13)} Nuevas fechas próximamente
+                        </span>
+                        <span class="session-flat-seats" style="background:#f1f5f9; color:#64748b;">
                           Por abrir
                         </span>
                       </div>
@@ -794,7 +780,7 @@ export const CoursesView = {
                   <p style="margin:2px 0 0; font-size:0.8rem;">En cuanto los estudiantes se matriculen a través de la plataforma, verás sus nombres, horarios y comprobantes aquí.</p>
                 </div>
               ` : `
-                <div style="max-height:280px; overflow-y:auto; border:1px solid #e2e8f0; border-radius:8px;">
+                <div class="table-responsive" style="max-height:280px; overflow-y:auto; overflow-x:auto; -webkit-overflow-scrolling:touch; border:1px solid #e2e8f0; border-radius:8px;">
                   <table class="table" style="margin:0; font-size:0.82rem; width:100%; border-collapse:collapse;">
                     <thead>
                       <tr style="background:#f8fafc; border-bottom:1px solid #e2e8f0; text-align:left;">
@@ -999,7 +985,7 @@ export const CoursesView = {
         <div id="external-tutor-panel" style="${isExternal ? 'display:block;' : 'display:none;'}">
           <div style="background:#fffbeb; border:1px solid #fef3c7; border-radius:8px; padding:0.6rem 0.85rem; margin-bottom:0.5rem;">
             <div style="display:flex; align-items:center; gap:0.4rem; color:#92400e; font-size:0.82rem; margin-bottom:0.2rem; font-weight:700;">
-              <span>ℹ️</span> Docente o Expositor Externo (Sin cuenta requerida)
+              ${Icons.info('', 14)} <span>Docente o Expositor Externo (Sin cuenta requerida)</span>
             </div>
             <p style="margin:0; font-size:0.76rem; color:#b45309; line-height:1.4;">
               No requiere crear una cuenta institucional. Se reflejará con el distintivo oficial <strong>Exterior / Invitado</strong> en las tarjetas y detalles del taller.

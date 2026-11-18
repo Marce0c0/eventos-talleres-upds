@@ -988,15 +988,15 @@ export const ForumsView = {
             <label class="form-label" for="forum-channel-select">Canal o Subforo de Destino *</label>
             <select id="forum-channel-select" class="form-control" required>
               <optgroup label="Canal Principal">
-                <option value="general" ${defaultChannel === 'general' ? 'selected' : ''}>🌐 Foro General de Ayuda & Soporte (Libre)</option>
+                <option value="general" ${defaultChannel === 'general' ? 'selected' : ''}>Foro General de Ayuda & Soporte (Libre)</option>
               </optgroup>
               ${isAdmin ? `
                 <optgroup label="Subforos de Eventos & Hackathons (Exclusivo Administración Central)">
-                  ${events.map((e) => `<option value="event:${e.id}" ${defaultChannel === 'events' && defaultSubId === e.id ? 'selected' : ''}>🏆 ${e.title}</option>`).join('')}
+                  ${events.map((e) => `<option value="event:${e.id}" ${defaultChannel === 'events' && defaultSubId === e.id ? 'selected' : ''}>Evento: ${e.title}</option>`).join('')}
                 </optgroup>
               ` : ''}
               <optgroup label="Subforos de Cursos & Talleres (${isAdmin ? 'Administración y Docentes' : 'Docente Titular'})">
-                ${courses.map((c) => `<option value="course:${c.id}" ${defaultChannel === 'courses' && defaultSubId === c.id ? 'selected' : ''}>📚 ${c.title}</option>`).join('')}
+                ${courses.map((c) => `<option value="course:${c.id}" ${defaultChannel === 'courses' && defaultSubId === c.id ? 'selected' : ''}>Curso: ${c.title}</option>`).join('')}
               </optgroup>
             </select>
             <small id="forum-channel-help" class="form-help">
@@ -1010,7 +1010,7 @@ export const ForumsView = {
           <div class="form-group">
             <label class="form-label" for="forum-category-select">Tipo de Consulta / Categoría *</label>
             <select id="forum-category-select" class="form-control" required>
-              ${FORUM_CATEGORIES.map((c) => `<option value="${c.id}">${c.icon} ${c.label}</option>`).join('')}
+              ${FORUM_CATEGORIES.map((c) => `<option value="${c.id}">${c.label}</option>`).join('')}
             </select>
           </div>
 
@@ -1135,7 +1135,7 @@ export const ForumsView = {
         const courseId = val.replace('course:', '');
         const access = getCourseForumAccess(courseId, activeUser, state.bookings);
         if (!access.allowed) {
-          channelHelp.innerHTML = `<span style="color:#b91c1c; font-weight:700;">🔒 ${access.message}</span>`;
+          channelHelp.innerHTML = `<span style="color:#b91c1c; font-weight:700; display:inline-flex; align-items:center; gap:0.35rem;">${Icons.lock('', 14)} ${access.message}</span>`;
           return;
         }
       }
@@ -1190,7 +1190,7 @@ export const ForumsView = {
           <div class="form-group">
             <label class="form-label" for="edit-forum-category">Categoría</label>
             <select id="edit-forum-category" class="form-control">
-              ${FORUM_CATEGORIES.map((c) => `<option value="${c.id}" ${meta.category === c.id ? 'selected' : ''}>${c.icon} ${c.label}</option>`).join('')}
+              ${FORUM_CATEGORIES.map((c) => `<option value="${c.id}" ${meta.category === c.id ? 'selected' : ''}>${c.label}</option>`).join('')}
             </select>
           </div>
 

@@ -214,7 +214,9 @@ export const UsersView = {
                     </div>
                   </div>
                   <div>
-                    <span class="badge badge-info" style="font-size:0.75rem;">👥 ${section.users.length} ${section.users.length === 1 ? 'usuario registrado' : 'usuarios registrados'}</span>
+                    <span class="badge badge-info" style="font-size:0.75rem; display:inline-flex; align-items:center; gap:0.35rem;">
+                      ${Icons.users('', 13)} ${section.users.length} ${section.users.length === 1 ? 'usuario registrado' : 'usuarios registrados'}
+                    </span>
                   </div>
                 </div>
 
@@ -244,7 +246,7 @@ export const UsersView = {
                         const avatarBg = isStud ? '#e0f2fe' : (isTut ? '#fef3c7' : '#fee2e2');
                         const avatarColor = isStud ? '#0284c7' : (isTut ? '#b45309' : '#b91c1c');
                         const avatarBorder = isStud ? '#bae6fd' : (isTut ? '#fde68a' : '#fecaca');
-                        const roleDesc = isStud ? '🎓 Matrícula Estudiantil' : (isTut ? '👨‍🏫 Docente Titular UPDS' : '🛡️ Administración del Sistema');
+                        const roleDesc = isStud ? `${Icons.cap('', 13)} Matrícula Estudiantil` : (isTut ? `${Icons.user('', 13)} Docente Titular UPDS` : `${Icons.shield('', 13)} Administración del Sistema`);
 
                         return `
                           <tr>

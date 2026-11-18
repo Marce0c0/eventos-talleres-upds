@@ -1,7 +1,7 @@
 {
-  "name": "sistema-tutoriales-upds-backend",
+  "name": "eventos-talleres-upds-backend",
   "version": "2.0.0",
-  "description": "API REST del Sistema de Tutoriales UPDS — Node.js + TypeScript + Express + Prisma",
+  "description": "API REST de Eventos y Talleres UPDS — Node.js + TypeScript + Express + Prisma",
   "main": "dist/server.js",
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",

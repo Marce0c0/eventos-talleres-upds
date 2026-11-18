@@ -9,6 +9,7 @@ import { Icons } from '../components/Icons.js';
 import { TicketModal } from '../components/TicketModal.js';
 import { Skeleton } from '../components/Skeleton.js';
 import { Navbar } from '../components/Navbar.js';
+import { BookingsView } from './BookingsView.js';
 
 export const NotificationsView = {
   _activeFilter: 'all', // 'all' | 'unread' | 'read'
@@ -83,20 +84,16 @@ export const NotificationsView = {
     // Navegación contextual directa
     store.setView(linkInfo.view);
 
-    // Si es estudiante y la notificación es sobre una entrada confirmada, abrir el ticket de una vez
+    // Si es estudiante y la notificación es sobre una entrada confirmada, abrir el detalle de una vez
     if (linkInfo.view === 'bookings' && activeUser?.role === 'student') {
       setTimeout(() => {
         const bookings = store.getState().bookings || [];
         const myBookings = bookings.filter((b) => b.studentId === activeUser.id && b.status !== 'cancelled');
         const targetBooking = myBookings[0] || bookings[0];
-        if (targetBooking) {
-          const courses = store.getState().courses || [];
-          const tutorias = store.getState().tutorias || [];
-          const course = courses.find((c) => c.id === targetBooking.courseId) || targetBooking.course;
-          const tutoria = tutorias.find((t) => t.id === targetBooking.tutoriaId) || targetBooking.tutoria;
-          TicketModal.open(targetBooking, course, tutoria, activeUser);
+        if (targetBooking && BookingsView.openDetail) {
+          BookingsView.openDetail(targetBooking.id);
         }
-      }, 180);
+      }, 120);
     }
   },
 

@@ -273,7 +273,7 @@ export const EventsView = {
           <div style="display:flex; align-items:center; gap:0.65rem; flex-wrap:wrap;">
             <div class="bolivia-live-clock-badge" title="Reloj en vivo sincronizado con la hora oficial de Bolivia (UTC-4)">
               <span class="live-clock-pulse"></span>
-              <span style="font-weight:700;">🇧🇴 Bolivia:</span>
+              <span style="font-weight:700; display:inline-flex; align-items:center; gap:0.3rem;">${Icons.flag('', 13)} Bolivia:</span>
               <span id="bolivia-live-clock-val" style="font-family:monospace; font-weight:800;">${Badge.getNowBoliviaString()}</span>
             </div>
             ${canManage ? `
@@ -580,8 +580,8 @@ export const EventsView = {
           title: 'Confirmación de Seguridad',
           message: `
             <div style="text-align:left; color:#1e293b;">
-              <p style="margin:0 0 10px; font-weight:700; color:#b91c1c;">
-                ⚠️ ¿Estás seguro de que deseas eliminar permanentemente los eventos finalizados?
+              <p style="margin:0 0 10px; font-weight:700; color:#b91c1c; display:flex; align-items:center; gap:0.4rem;">
+                ${Icons.alertTriangle('', 16)} ¿Estás seguro de que deseas eliminar permanentemente los eventos finalizados?
               </p>
               <p style="margin:0 0 10px; font-size:0.88rem; color:#475569; line-height:1.5;">
                 Esta acción eliminará de forma irreversible <strong>${finishedItems.length} ${finishedItems.length === 1 ? 'evento finalizado' : 'eventos finalizados'}</strong> del catálogo institucional.
@@ -682,16 +682,19 @@ export const EventsView = {
                     </div>
                   ` : isCountdown ? `
                     <div style="background:#fffbeb; border:1px solid #fde68a; border-left:4px solid #d97706; border-radius:8px; padding:10px 14px; margin-bottom:14px; display:flex; align-items:center; gap:0.65rem;">
-                      <span style="font-size:1.3rem;">⏳</span>
+                      <span style="display:inline-flex; align-items:center; color:#b45309;">${Icons.clock('', 20)}</span>
                       <div>
                         <strong style="color:#b45309; font-size:0.92rem; text-transform:uppercase; letter-spacing:0.04em;">Inicio Inminente (&lt; 48 Horas)</strong>
                         <p style="margin:2px 0 0; font-size:0.82rem; color:#92400e;">Faltan <strong>${formatCountdown(timing.diffMs)}</strong> para el inicio oficial. Apenas llegue a 0 pasará a EN VIVO automáticamente.</p>
                       </div>
                     </div>
                   ` : isFinished ? `
-                    <div style="background:#f1f5f9; border:1px solid #cbd5e1; border-left:4px solid #64748b; border-radius:8px; padding:10px 14px; margin-bottom:14px; color:#475569;">
-                      <strong style="font-size:0.92rem; text-transform:uppercase; letter-spacing:0.04em; color:#334155;">🏁 Convocatoria Finalizada</strong>
-                      <p style="margin:2px 0 0; font-size:0.82rem; color:#64748b;">Este evento o hackathon ya ha concluido su ciclo oficial de desarrollo.</p>
+                    <div style="background:#f1f5f9; border:1px solid #cbd5e1; border-left:4px solid #64748b; border-radius:8px; padding:10px 14px; margin-bottom:14px; color:#475569; display:flex; align-items:center; gap:0.5rem;">
+                      <span style="display:inline-flex; align-items:center; color:#475569;">${Icons.flag('', 16)}</span>
+                      <div>
+                        <strong style="font-size:0.92rem; text-transform:uppercase; letter-spacing:0.04em; color:#334155;">Convocatoria Finalizada</strong>
+                        <p style="margin:2px 0 0; font-size:0.82rem; color:#64748b;">Este evento o hackathon ya ha concluido su ciclo oficial de desarrollo.</p>
+                      </div>
                     </div>
                   ` : ''}
 
@@ -1020,7 +1023,7 @@ export const EventsView = {
               warnBox.style.borderLeft = '4px solid #0284c7';
               warnBox.style.color = '#0369a1';
               warnBox.innerHTML = `
-                <span style="font-size:1.2rem; line-height:1; flex-shrink:0;">ℹ️</span>
+                <span style="font-size:1.2rem; line-height:1; flex-shrink:0; display:inline-flex; align-items:center; color:#0284c7;">${Icons.info('', 18)}</span>
                 <div>
                   <strong style="color:#0284c7;">Evento Concluido / Histórico Oficial</strong>
                   <p style="margin:2px 0 0; line-height:1.45; color:#075985;">
@@ -1034,7 +1037,7 @@ export const EventsView = {
               warnBox.style.borderLeft = '4px solid #e11d48';
               warnBox.style.color = '#9f1239';
               warnBox.innerHTML = `
-                <span style="font-size:1.2rem; line-height:1; flex-shrink:0;">⚠️</span>
+                <span style="font-size:1.2rem; line-height:1; flex-shrink:0; display:inline-flex; align-items:center; color:#e11d48;">${Icons.alertTriangle('', 18)}</span>
                 <div>
                   <strong style="color:#be123c;">Aviso: La fecha de finalización ya expiró</strong>
                   <p style="margin:2px 0 0; line-height:1.45; color:#881337;">
